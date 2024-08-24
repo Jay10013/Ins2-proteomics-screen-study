@@ -1,0 +1,1087 @@
+---
+title: "Ins2GFP normalize"
+output: html_document
+date: "2023-03-19"
+---
+
+```{r setup, include=FALSE}
+#library("ggplot2") #already loaded by tidyverse
+
+library("tidyverse")
+#library("dplyr") #already loaded by tidyverse
+library("data.table")
+
+library("reconPlots")
+#install.packages("here") #look at this package for setting your working directory - it makes your script reproducible on other systems
+library("here")
+library("pracma") #for AUC
+library("mclust")
+library("extrafont")
+library("RColorBrewer")
+library("scales")
+library("grid")
+library("gtable")
+library("pheatmap")
+library("readxl")
+library("tibble")
+library("dbplyr")
+library("plyr")
+library("ggrepel")
+library("ggbeeswarm")
+
+
+library(ggplot2)
+library(ggpubr)
+library(rstatix)
+library(ggsignif)
+library(ggforce)
+library(Hmisc)
+library(ggpubr)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+Testsheet<-subset(Fullsheet2, Frame<=4)
+Testsheet<-subset(Testsheet, Sex=="Female")
+
+df.summary_OT2h_F <- Testsheet %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    )
+
+
+
+Testsheet<-subset(Fullsheet2, Frame<=4)
+Testsheet<-subset(Testsheet, Sex=="Male")
+
+df.summary_OT2h_M <- Testsheet %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    )
+
+
+```
+
+## Including Plots
+
+
+
+
+
+
+```{r}
+
+unique(Fullsheet48M1$Treatment)
+temp1<-subset(Fullsheet48M1, Treatment=="xestospongin")
+temp2<-subset(df.summary_OT2h_M, Treatment=="xestospongin")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-temp1
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="S961")
+temp2<-subset(df.summary_OT2h_M, Treatment=="S961")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="HNMPA")
+temp2<-subset(df.summary_OT2h_M, Treatment=="HNMPA")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="actinomycin D")
+temp2<-subset(df.summary_OT2h_M, Treatment=="actinomycin D")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="alpha amanitin")
+temp2<-subset(df.summary_OT2h_M, Treatment=="alpha amanitin")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="triptolide")
+temp2<-subset(df.summary_OT2h_M, Treatment=="triptolide")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="DRB")
+temp2<-subset(df.summary_OT2h_M, Treatment=="DRB")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="isrib")
+temp2<-subset(df.summary_OT2h_M, Treatment=="isrib")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="PERK inhibitor I")
+temp2<-subset(df.summary_OT2h_M, Treatment=="PERK inhibitor I")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="PKR inhibitor")
+temp2<-subset(df.summary_OT2h_M, Treatment=="PKR inhibitor")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="cyclohexamide")
+temp2<-subset(df.summary_OT2h_M, Treatment=="cyclohexamide")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="CCT020312")
+temp2<-subset(df.summary_OT2h_M, Treatment=="CCT020312")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="sal003")
+temp2<-subset(df.summary_OT2h_M, Treatment=="sal003")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="DHBDC")
+temp2<-subset(df.summary_OT2h_M, Treatment=="DHBDC")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="IBMX")
+temp2<-subset(df.summary_OT2h_M, Treatment=="IBMX")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="arginine")
+temp2<-subset(df.summary_OT2h_M, Treatment=="arginine")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="ryanodine")
+temp2<-subset(df.summary_OT2h_M, Treatment=="ryanodine")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="AICAR")
+temp2<-subset(df.summary_OT2h_M, Treatment=="AICAR")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="tolbutamide")
+temp2<-subset(df.summary_OT2h_M, Treatment=="tolbutamide")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="diazoxide")
+temp2<-subset(df.summary_OT2h_M, Treatment=="diazoxide")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="verapamil")
+temp2<-subset(df.summary_OT2h_M, Treatment=="verapamil")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="pramlintide")
+temp2<-subset(df.summary_OT2h_M, Treatment=="pramlintide")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="MG132")
+temp2<-subset(df.summary_OT2h_M, Treatment=="MG132")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="bortezomib")
+temp2<-subset(df.summary_OT2h_M, Treatment=="bortezomib")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="DMSO 2%")
+temp2<-subset(df.summary_OT2h_M, Treatment=="DMSO 2%")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="DMSO 4%")
+temp2<-subset(df.summary_OT2h_M, Treatment=="DMSO 4%")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="ETOH")
+temp2<-subset(df.summary_OT2h_M, Treatment=="ETOH")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="sodium butyrate")
+temp2<-subset(df.summary_OT2h_M, Treatment=="sodium butyrate")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="isoxazole 9")
+temp2<-subset(df.summary_OT2h_M, Treatment=="isoxazole 9")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="AS1842856")
+temp2<-subset(df.summary_OT2h_M, Treatment=="AS1842856")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="GLP-1")
+temp2<-subset(df.summary_OT2h_M, Treatment=="GLP-1")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="MGCD0103")
+temp2<-subset(df.summary_OT2h_M, Treatment=="MGCD0103")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="staurosporine")
+temp2<-subset(df.summary_OT2h_M, Treatment=="staurosporine")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="trichostatin A")
+temp2<-subset(df.summary_OT2h_M, Treatment=="trichostatin A")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="thapsigargin")
+temp2<-subset(df.summary_OT2h_M, Treatment=="thapsigargin")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="tunicamycin")
+temp2<-subset(df.summary_OT2h_M, Treatment=="tunicamycin")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="eeyarestatin I")
+temp2<-subset(df.summary_OT2h_M, Treatment=="eeyarestatin I")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="azoramide")
+temp2<-subset(df.summary_OT2h_M, Treatment=="azoramide")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="APY29")
+temp2<-subset(df.summary_OT2h_M, Treatment=="APY29")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="sunitinib")
+temp2<-subset(df.summary_OT2h_M, Treatment=="sunitinib")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="palmitic acid")
+temp2<-subset(df.summary_OT2h_M, Treatment=="palmitic acid")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="wortmannin")
+temp2<-subset(df.summary_OT2h_M, Treatment=="wortmannin")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="dexamethasone")
+temp2<-subset(df.summary_OT2h_M, Treatment=="dexamethasone")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="epinephrine")
+temp2<-subset(df.summary_OT2h_M, Treatment=="epinephrine")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="metformin")
+temp2<-subset(df.summary_OT2h_M, Treatment=="metformin")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="cyclosporin A")
+temp2<-subset(df.summary_OT2h_M, Treatment=="cyclosporin A")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="LY294002")
+temp2<-subset(df.summary_OT2h_M, Treatment=="LY294002")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="okadaic acid")
+temp2<-subset(df.summary_OT2h_M, Treatment=="okadaic acid")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="rosiglitazone")
+temp2<-subset(df.summary_OT2h_M, Treatment=="rosiglitazone")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="SST")
+temp2<-subset(df.summary_OT2h_M, Treatment=="SST")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48M1, Treatment=="tacrolimus")
+temp2<-subset(df.summary_OT2h_M, Treatment=="tacrolimus")
+temp1$norm_FITC<-temp1$smooth_FITC/temp2$smooth_FITC
+
+Fullsheet48M1norm<-full_join(Fullsheet48M1norm, temp1)
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+```{r}
+####baseline subtract
+Fullsheet48F1rawnorm<-subset(Fullsheet2, Sex=="Female")  
+unique(Fullsheet48F1rawnorm$Treatment)
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="xestospongin")
+temp2<-subset(df.summary_OT2h_F, Treatment=="xestospongin")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-temp1
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="S961")
+temp2<-subset(df.summary_OT2h_F, Treatment=="S961")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="HNMPA")
+temp2<-subset(df.summary_OT2h_F, Treatment=="HNMPA")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="actinomycin D")
+temp2<-subset(df.summary_OT2h_F, Treatment=="actinomycin D")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="alpha amanitin")
+temp2<-subset(df.summary_OT2h_F, Treatment=="alpha amanitin")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="triptolide")
+temp2<-subset(df.summary_OT2h_F, Treatment=="triptolide")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="DRB")
+temp2<-subset(df.summary_OT2h_F, Treatment=="DRB")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="isrib")
+temp2<-subset(df.summary_OT2h_F, Treatment=="isrib")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="PERK inhibitor I")
+temp2<-subset(df.summary_OT2h_F, Treatment=="PERK inhibitor I")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="PKR inhibitor")
+temp2<-subset(df.summary_OT2h_F, Treatment=="PKR inhibitor")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="cyclohexamide")
+temp2<-subset(df.summary_OT2h_F, Treatment=="cyclohexamide")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="CCT020312")
+temp2<-subset(df.summary_OT2h_F, Treatment=="CCT020312")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="sal003")
+temp2<-subset(df.summary_OT2h_F, Treatment=="sal003")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="DHDBC")
+temp2<-subset(df.summary_OT2h_F, Treatment=="DHDBC")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="IBMX")
+temp2<-subset(df.summary_OT2h_F, Treatment=="IBMX")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="arginine")
+temp2<-subset(df.summary_OT2h_F, Treatment=="arginine")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="ryanodine")
+temp2<-subset(df.summary_OT2h_F, Treatment=="ryanodine")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="AICAR")
+temp2<-subset(df.summary_OT2h_F, Treatment=="AICAR")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="tolbutamide")
+temp2<-subset(df.summary_OT2h_F, Treatment=="tolbutamide")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="diazoxide")
+temp2<-subset(df.summary_OT2h_F, Treatment=="diazoxide")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="verapamil")
+temp2<-subset(df.summary_OT2h_F, Treatment=="verapamil")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="pramlinitide")
+temp2<-subset(df.summary_OT2h_F, Treatment=="pramlinitide")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="MG132")
+temp2<-subset(df.summary_OT2h_F, Treatment=="MG132")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="bortezomib")
+temp2<-subset(df.summary_OT2h_F, Treatment=="bortezomib")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="DMSO 2%")
+temp2<-subset(df.summary_OT2h_F, Treatment=="DMSO 2%")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="DMSO 4%")
+temp2<-subset(df.summary_OT2h_F, Treatment=="DMSO 4%")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="ETOH")
+temp2<-subset(df.summary_OT2h_F, Treatment=="ETOH")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="sodium butyrate")
+temp2<-subset(df.summary_OT2h_F, Treatment=="sodium butyrate")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="isoxazole 9")
+temp2<-subset(df.summary_OT2h_F, Treatment=="isoxazole 9")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="AS1842856")
+temp2<-subset(df.summary_OT2h_F, Treatment=="AS1842856")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="GLP-1")
+temp2<-subset(df.summary_OT2h_F, Treatment=="GLP-1")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="MGCD0103")
+temp2<-subset(df.summary_OT2h_F, Treatment=="MGCD0103")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="staurosporine")
+temp2<-subset(df.summary_OT2h_F, Treatment=="staurosporine")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="trichostatin A")
+temp2<-subset(df.summary_OT2h_F, Treatment=="trichostatin A")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="thapsigargin")
+temp2<-subset(df.summary_OT2h_F, Treatment=="thapsigargin")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="tunicamycin")
+temp2<-subset(df.summary_OT2h_F, Treatment=="tunicamycin")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="eeyarestatin I")
+temp2<-subset(df.summary_OT2h_F, Treatment=="eeyarestatin I")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="azoramide")
+temp2<-subset(df.summary_OT2h_F, Treatment=="azoramide")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="APY29")
+temp2<-subset(df.summary_OT2h_F, Treatment=="APY29")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="sunitinib")
+temp2<-subset(df.summary_OT2h_F, Treatment=="sunitinib")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="palmitic acid")
+temp2<-subset(df.summary_OT2h_F, Treatment=="palmitic acid")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="wortmannin")
+temp2<-subset(df.summary_OT2h_F, Treatment=="wortmannin")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="dexamethasone")
+temp2<-subset(df.summary_OT2h_F, Treatment=="dexamethasone")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="epinephrine")
+temp2<-subset(df.summary_OT2h_F, Treatment=="epinephrine")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="metformin")
+temp2<-subset(df.summary_OT2h_F, Treatment=="metformin")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="cyclosporin A")
+temp2<-subset(df.summary_OT2h_F, Treatment=="cyclosporin A")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="LY294002")
+temp2<-subset(df.summary_OT2h_F, Treatment=="LY294002")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="okadaic acid")
+temp2<-subset(df.summary_OT2h_F, Treatment=="okadaic acid")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="rosiglitazone")
+temp2<-subset(df.summary_OT2h_F, Treatment=="rosiglitazone")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="SST")
+temp2<-subset(df.summary_OT2h_F, Treatment=="SST")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+temp1<-subset(Fullsheet48F1rawnorm, Treatment=="tacrolimus")
+temp2<-subset(df.summary_OT2h_F, Treatment=="tacrolimus")
+temp1$baseline_scaled_FITC<-temp1$scaled_FITC-temp2$scaled_FITC
+
+Fullsheet48F1rawnorm2<-full_join(Fullsheet48F1rawnorm2, temp1)
+
+
+
+
+```
+
+
+
+
+```{r}
+Fullsheet48F1norm2$Time<-Fullsheet48F1norm2$Frame/2-0.5
+Fullsheet48F1norm2$Time<-Fullsheet48F1norm2$Frame/2-0.5
+```
+
+
+
+
+
+```{r}
+df_merged<-subset(Fullsheet48F1norm2, Treatment=="DMSO 2%")
+
+#`GFP Intensity` <- df_merged$smooth_FITC[df_merged$`Time (Hours)` == 0]
+
+`GFP Intensity` <-  df_merged$baseline_smooth_FITC[df_merged$`Frame` == 4]
+dens <- densityMclust(`GFP Intensity`, G = 2)
+
+mean_1 <- dens$parameters$mean[1]
+mean_2 <- dens$parameters$mean[2]
+
+sd_1 <- sqrt(dens$parameters$variance$sigmasq[1])
+sd_2 <- sqrt(dens$parameters$variance$sigmasq[2])
+
+norm_dist_equation_1 <- function(x) 1/(sd_1*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_1)/sd_1)^2)
+norm_dist_equation_2 <- function(x) 1/(sd_2*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_2)/sd_2)^2)
+
+intersect_femalesmooth <- curve_intersect(norm_dist_equation_1, norm_dist_equation_2, empirical = FALSE, 
+                           domain = c(mean_1, mean_2))[[1]]
+
+
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+p<-ggplot(Fullsheet48F1norm2, aes(baseline_smooth_FITC)) + geom_density(fill = "darkgreen") + geom_vline(xintercept = density(Fullsheet48F1norm2$baseline_smooth_FITC)$x[125])
+
+temp<-subset(Fullsheet48F1norm2, Frame==4)
+
+peak1y<-which.max(density(temp$baseline_smooth_FITC)$y)
+peak1x<-density(temp$baseline_smooth_FITC)$x[peak1y]
+
+peak2y<- max(density(temp$baseline_smooth_FITC)$y[density(temp$baseline_smooth_FITC)$x >1])
+peak2x<-density(temp$baseline_smooth_FITC)$x[peak2y]
+
+DensityY <- density(temp$baseline_smooth_FITC)$y
+DensityX <- density(temp$baseline_smooth_FITC)$x
+
+MinYDensity<- min(DensityY[DensityX < 1.2 & DensityX > 0.22])
+which(DensityY == MinYDensity)
+
+p<-ggplot(temp, aes(baseline_smooth_FITC))+ 
+  geom_density() + 
+  geom_vline(xintercept = intersect_femalesmooth)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+
+#Fullsheet48_10F_F1
+
+
+
+#Fullsheet48F1
+
+
+
+Testsheet<-subset(Fullsheet48_10F_F1, Frame<=4)
+Testsheet<-subset(Testsheet, Sex=="Female")
+
+df.summary_OT2h_F <- Testsheet %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    smooth_FITC = mean(smooth_FITC, na.rm=TRUE),
+    )
+
+
+
+Testsheet<-subset(Fullsheet48F1, Frame<=4)
+Testsheet<-subset(Testsheet, Sex=="Male")
+
+df.summary_OT2h_M <- Testsheet %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    smooth_FITC = mean(smooth_FITC, na.rm=TRUE),
+    )
+
+
+
+
+
+Fullsheet48F1norm<-Fullsheet48F1
+
+for (i in Fullsheet48F1norm$Treatment) {
+  
+  Fullsheet48F1norm$norm_FITC[Fullsheet48F1norm$Treatment == i] <- 
+    Fullsheet48F1norm$smooth_FITC[Fullsheet48F1norm$Treatment == i]/
+    df.summary_OT2h_M$smooth_FITC[df.summary_OT2h$Treatment == i]
+  }
+
+
+
+
+Fullsheet48F1norm<-Fullsheet48_10F_F1
+
+for (i in Fullsheet48F1norm$Treatment) {
+  
+  Fullsheet48F1norm$norm_FITC[Fullsheet48F1norm$Treatment == i] <- 
+    Fullsheet48F1norm$smooth_FITC[Fullsheet48F1norm$Treatment == i]/
+    df.summary_OT2h_F$smooth_FITC[df.summary_OT2h$Treatment == i]
+  }
+
+
+
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

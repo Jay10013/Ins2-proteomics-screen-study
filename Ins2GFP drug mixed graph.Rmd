@@ -1,0 +1,569 @@
+---
+title: "ins2GFP drug graph"
+output: html_document
+date: '2023-02-28'
+---
+
+```{r setup, include=FALSE}
+#library("ggplot2") #already loaded by tidyverse
+
+library("tidyverse")
+#library("dplyr") #already loaded by tidyverse
+library("data.table")
+
+library("reconPlots")
+#install.packages("here") #look at this package for setting your working directory - it makes your script reproducible on other systems
+library("here")
+library("pracma") #for AUC
+library("mclust")
+library("extrafont")
+library("RColorBrewer")
+library("scales")
+library("grid")
+library("gtable")
+library("pheatmap")
+library("readxl")
+library("tibble")
+library("dbplyr")
+library("plyr")
+library("ggrepel")
+library("ggbeeswarm")
+
+
+library(ggplot2)
+library(ggpubr)
+library(rstatix)
+library(ggsignif)
+library(ggforce)
+library(Hmisc)
+library(ggpubr)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+
+df_merged<-Fullsheet3
+
+#`GFP Intensity` <- df_merged$scaled_FITC[df_merged$`Time (Hours)` == 0]
+`GFP Intensity` <-  df_merged$scaled_FITC[df_merged$`Frame` == 3]
+dens <- densityMclust(`GFP Intensity`, G = 2)
+
+mean_1 <- dens$parameters$mean[1]
+mean_2 <- dens$parameters$mean[2]
+
+sd_1 <- sqrt(dens$parameters$variance$sigmasq[1])
+sd_2 <- sqrt(dens$parameters$variance$sigmasq[2])
+
+norm_dist_equation_1 <- function(x) 1/(sd_1*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_1)/sd_1)^2)
+norm_dist_equation_2 <- function(x) 1/(sd_2*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_2)/sd_2)^2)
+
+intersect <- curve_intersect(norm_dist_equation_1, norm_dist_equation_2, empirical = FALSE, 
+                             domain = c(5, 100))[[1]]
+
+
+
+df_merged<-subset(Fullsheet3, Frame==3)
+df_merged<-subset(df_merged, scaled_FITC>intersect)
+high<-unique(df_merged$CellID)
+df_merged<-subset(Fullsheet3, Frame==3)
+df_merged<-subset(df_merged, scaled_FITC<=intersect)
+low<-unique(df_merged$CellID)
+A<-Fullsheet3[Fullsheet3$CellID%in%high,]
+A$level<-"high"
+B<-Fullsheet3[Fullsheet3$CellID%in%low,]
+B$level<-"low"
+Fullsheet48scaledHL<-full_join(A, B)
+#Fullsheet48scaledHL<-full_join(Fullsheet48scaledhl, Fullsheet48scaledhlM1)
+temp<-subset(Fullsheet48scaledHL, level=="low")
+unique(temp$CellID)
+unique(Fullsheet48scaledHL$CellID)
+Fullsheet48scaledHL$Time<-Fullsheet48scaledHL$Frame/2-0.5
+#Fullsheet96scaled_hl_All<-full_join(Fullsheet96scaledhl, Fullsheet96scaledhlM1)
+#temp<-subset(Fullsheet96scaledhlM1, level=="low")
+```
+
+## Including Plots
+
+
+```{r}
+Fullsheet48scaledHL<-subset(Fullsheet48scaledHL, !Well=="022")
+Fullsheet48scaledHL<-subset(Fullsheet48scaledHL, !Well=="N23")
+```
+
+
+
+
+
+```{r}
+Fullsheet48scaledHL_dead<-subset(Fullsheet48scaledHL, TEXASRED<=4000)
+```
+
+```{r}
+
+Fullsheet3$Frame<-as.numeric(Fullsheet3$Frame)
+Fullsheet3$FITC<-as.numeric(Fullsheet3$FITC)
+FullsheetloesswNA <-split(FullsheetwNA3, FullsheetwNA3$CellID)
+
+#calculate the predicted values for each country
+
+FullsheetloesswNA2 <- lapply(FullsheetloesswNA, function(df){
+   df$smooth_FITC  <-stats::predict(stats::loess(FITC ~ Frame, span = 0.75, data=df))
+   df
+})
+
+#merge back into 1 dataframe
+FullsheetloesswNA2 <-dplyr::bind_rows(FullsheetloesswNA2 )
+FullsheetloesswNA2$Time<-Fullsheetloess2$Frame/2-0.5
+
+```
+
+
+
+
+
+
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+Testsheet<-Fullsheetloess2
+Testsheet<-subset(Testsheet, Frame==90)
+Testsheet<-subset(Testsheet, Frame<=93)
+
+Testsheet48<-Testsheet%>%
+  dplyr::group_by(CellID, Treatment, Category,level,Sex) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm = TRUE),
+    mean_FITC = mean(FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm = TRUE),
+    mean_DAPI = mean(DAPI, na.rm = TRUE))
+
+Testsheet<-Fullsheetloess2
+Testsheet<-subset(Testsheet, Frame<=5)
+
+Testsheet2<-Testsheet%>%
+  dplyr::group_by(CellID, Treatment, Category, level, Sex) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm = TRUE),
+    mean_FITC = mean(FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm = TRUE),
+    mean_DAPI = mean(DAPI, na.rm = TRUE)
+  )
+
+
+
+Testsheet<-Fullsheetloess2
+Testsheet<-subset(Testsheet, Frame<=145)
+Testsheet<-subset(Testsheet, Frame>=140)
+Testsheet72<-Testsheet%>%
+  dplyr::group_by(CellID, Treatment, Category, level, Sex) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm = TRUE),
+    mean_FITC = mean(FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm = TRUE),
+    mean_DAPI = mean(DAPI, na.rm = TRUE)
+  )
+
+Testsheet<-Fullsheetloess2
+Testsheet<-subset(Testsheet, Frame<=110)
+Testsheet<-subset(Testsheet, Frame>=108)
+Testsheet60<-Testsheet%>%
+  dplyr::group_by(CellID, Treatment, Category, level, Sex) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm = TRUE),    
+    mean_FITC = mean(FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm = TRUE),
+    mean_DAPI = mean(DAPI, na.rm = TRUE)
+  )
+
+
+
+Testsheet<-Fullsheetloess2
+Testsheet<-subset(Testsheet, Frame>=189)
+
+Testsheet96<-Testsheet%>%
+  dplyr::group_by(CellID, Treatment, Category, level, Sex) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm = TRUE),
+    mean_FITC = mean(FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm = TRUE),
+    mean_DAPI = mean(DAPI, na.rm = TRUE)
+    
+  )
+
+
+
+Testsheet<-Fullsheetloess2
+df.summary <- Testsheet %>%
+  dplyr::group_by(Frame, Time, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    sd = sd(FITC, na.rm = TRUE),
+    mean_FITC = mean(FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm = TRUE),
+    mean_DAPI = mean(DAPI, na.rm = TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    smooth_FITC= mean(smooth_FITC, na.rm=TRUE)
+  )
+
+Testsheet<-Fullsheetloess2
+df.summary_hl <- Testsheet %>%
+  dplyr::group_by(Frame, Time, Treatment, Category, Sex, level) %>%
+  dplyr::summarise(
+    sd = sd(FITC, na.rm = TRUE),
+    mean_FITC = mean(FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm = TRUE),
+    mean_DAPI = mean(DAPI, na.rm = TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE)
+  )
+
+
+
+```
+
+
+
+
+```{r}
+
+df.summary_Female<-subset(df.summary, Sex=="Female")
+
+for (i in df.summary_Female$Treatment) {
+  
+  df.summary_Female$norm_FITC[df.summary_Female$Treatment == i] <- 
+    df.summary_Female$scaled_FITC[df.summary_Female$Treatment == i]/
+    df.summary_OT2h$scaled_FITC[df.summary_OT2h$Treatment == i]
+  }
+
+
+
+
+Testsheet<-subset(Fullsheet48scaledHL, Frame<=4)
+Testsheet<-subset(Testsheet, Sex=="Female")
+
+df.summary_OT2h <- Testsheet %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    )
+
+
+
+
+for (i in df.summary_Female$Treatment) {
+  
+  df.summary_Female$norm_FITC[df.summary_Female$Treatment == i] <- 
+    df.summary_Female$scaled_FITC[df.summary_Female$Treatment == i]/
+    df.summary_OT2h$scaled_FITC[df.summary_OT2h$Treatment == i]
+  }
+
+
+```
+
+
+
+
+
+
+```{r}
+
+df_merged_normDAPIfemales<-subset(df.summary, Sex=="Female")
+
+for (i in df_merged_normDAPIfemales$Treatment) {
+  
+  df_merged_normDAPIfemales$normDAPI_FITC[df_merged_normDAPIfemales$Treatment == i] <- 
+    df_merged_normDAPIfemales$mean_FITC[df_merged_normDAPIfemales$Treatment == i]/
+    df_merged_normDAPIfemales$mean_DAPI[df_merged_normDAPIfemales$Treatment == i]
+  
+}
+
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+df_merged_normDMSO<-subset(df.summary, !Treatment=="DMSO 4%")
+df_merged_normDMSOmales<-subset(df_merged_normDMSO, Sex=="Male")
+
+for (i in df_merged_normDMSOmales$Treatment) {
+  
+  df_merged_normDMSOmales$normDMSO_FITC[df_merged_normDMSOmales$Treatment == i] <- 
+    df_merged_normDMSOmales$scaled_FITC[df_merged_normDMSOmales$Treatment == i]/
+    df_merged_normDMSOmales$scaled_FITC[df_merged_normDMSOmales$Treatment == "DMSO 2%"]
+  
+}
+
+for (i in df_merged_normDMSOmales$Treatment) {
+  
+  df_merged_normDMSOmales$rawDMSO_FITC[df_merged_normDMSOmales$Treatment == i] <- 
+    df_merged_normDMSOmales$mean_FITC[df_merged_normDMSOmales$Treatment == i]/
+    df_merged_normDMSOmales$mean_FITC[df_merged_normDMSOmales$Treatment == "DMSO 2%"]
+  
+}
+
+
+
+
+
+df_merged_normDMSOfemales<-subset(df_merged_normDMSO, Sex=="Female")
+
+for (i in df_merged_normDMSOfemales$Treatment) {
+  
+  df_merged_normDMSOfemales$normDMSO_FITC[df_merged_normDMSOfemales$Treatment == i] <- 
+    df_merged_normDMSOfemales$scaled_FITC[df_merged_normDMSOfemales$Treatment == i]/
+    df_merged_normDMSOfemales$scaled_FITC[df_merged_normDMSOfemales$Treatment == "DMSO 2%"]
+  
+}
+
+for (i in df_merged_normDMSOfemales$Treatment) {
+  
+  df_merged_normDMSOfemales$rawDMSO_FITC[df_merged_normDMSOfemales$Treatment == i] <- 
+    df_merged_normDMSOfemales$mean_FITC[df_merged_normDMSOfemales$Treatment == i]/
+    df_merged_normDMSOfemales$mean_FITC[df_merged_normDMSOfemales$Treatment == "DMSO 2%"]
+  
+}
+
+
+df_merged_normDMSOMvF<-full_join(df_merged_normDMSOfemales, df_merged_normDMSOmales)
+
+
+
+```
+
+
+
+
+
+```{r}
+df_merged_normDMSOMvF$Category2<-df_merged_normDMSOMvF$Category
+df_merged_normDMSOMvF$Category2<-gsub("ER stress 2", "ER stress", df_merged_normDMSOMvF$Category2)
+df_merged_normDMSOMvF$Category2<-gsub("ER stress 1", "ER stress", df_merged_normDMSOMvF$Category2)
+df_merged_normDMSOMvF$Category2<-gsub("INS upregulation 1", "INS upregulation", df_merged_normDMSOMvF$Category2)
+df_merged_normDMSOMvF$Category2<-gsub("INS upregulation 2", "INS upregulation", df_merged_normDMSOMvF$Category2)
+df_merged_normDMSOMvF$Category2<-gsub("INS downregulation 1", "INS downregulation", df_merged_normDMSOMvF$Category2)
+df_merged_normDMSOMvF$Category2<-gsub("INS downregulation 2", "INS downregulation", df_merged_normDMSOMvF$Category2)
+
+unique(df_merged_normDMSOMvF$Category2)
+```
+
+```{r}
+#####EDA###
+Testsheetavg<-subset(Fullsheet48scaledHL, Treatment=="staurosporine")
+#Testsheetavg<-subset(Testsheetavg, Well=="N21")
+
+p<-ggplot(Testsheetavg,aes(x=Frame,y=DAPI,group=CellID))+
+  geom_path(alpha=0.2,colour="blue")+
+  geom_path(aes(x=Frame,y=TEXASRED,group=CellID),alpha=0.2,colour="red")+
+  geom_path(aes(x=Frame,y=FITC,group=CellID),alpha=0.2,colour="green")+
+  facet_wrap("Well")+
+  labs(x="Time (min)",y="Intensity")+
+  #scale_x_continuous(breaks = pretty_breaks(n=10))+
+  theme(axis.title = element_text(family = "Arial", colour="black", size=12))+
+  theme(axis.text.x = element_text(family = "Arial",colour="black",size=12))+
+  theme(axis.text.y = element_text(family = "Arial",colour="black",size=12))+
+  theme(legend.text = element_text(family = "Arial",colour="black",size=12))+
+  theme(legend.title = element_text(family = "Arial",colour="black",size=12))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+Testsheetavg<-subset(df_merged_normDMSOMvF, Sex=="Male")
+
+
+#Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                                 #levels=c("actinomycin D","alpha amanitin","DRB","triptolide",
+                                          #"DMSO 2%", "DMSO 4%"))
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=rawDMSO_FITC, group=Treatment))+
+  geom_line(aes(color=Category2), size=1.5)+
+  coord_cartesian(clip = "off") +
+  geom_label_repel(data=subset(Testsheetavg, Time==96),aes(label = Treatment, color=Category2),
+                  nudge_x = 40, direction="y", xlim=c(0,110),segment.color="black",  size=7,
+                  na.rm = TRUE)+
+  ylim(0, 1.5)+
+  #scale_color_manual(values=c("#CC0033","#990033","#660000","#FF00CC", "#000000", "#666666"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=50,  family="Helvetica"))+
+  theme(axis.text = element_text(family="Helvetica", color="black", size=(30)))+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  #theme(legend.key.size = unit(0.1, 'cm'), #change legend key size
+        #legend.key.height = unit(0.1, 'cm'), #change legend key height
+        #legend.key.width = unit(0.1, 'cm'), #change legend key width
+        #legend.title = element_text(size=0.1), #change legend title font size
+        #legend.text = element_text(size=0.1))+ #change legend text font size
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+  theme(plot.margin = margin(1,5,1,1, "in"))
+
+ggsave(filename="E:/lifetime_inscon_super.pdf",width=40,height=25,units="in",dpi=600, limitsize = FALSE)
+```
+
+
+
+
+
+```{r}
+
+df_mergedAVG<-subset(df.summary, Category=="global transcription"| Category=="control")
+#Testsheetavg1<-subset(df_mergedAVG, Category=="control")
+#Testsheetavg<-full_join(Testsheetavg, Testsheetavg1)
+Testsheetavg<-subset(df_mergedAVG, Sex=="Female")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                                 levels=c("actinomycin D","alpha amanitin","DRB","triptolide",
+                                        "DMSO 2%", "DMSO 4%"))
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(0, 30)+
+  xlim(0, 96)+
+  scale_color_manual(values=c("#CC0033","#990033","#660000","#FF00CC", "#000000", "#666666"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=18,  family="TT Arial"))+
+  geom_smooth(se=FALSE)+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(14)))+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+
+
+
+
+```
+
+
+
+
+
+```{r}
+df_mergedAVG<-df.summary_Female
+Testsheetavg<-subset(df_mergedAVG, Category=="secretion upreg"|Category=="control")
+
+Testsheetavg<-subset(Testsheetavg, Sex=="Female")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("AICAR","arginine","IBMX","ryanodine","tolbutamide",
+                                        "DMSO 2%", "DMSO 4%"))
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=norm_FITC, group=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(0,2)+
+  scale_color_manual(values=c("#66FF66","#00CC00","#669933","#339900","#336600",
+                              "#000000","#666666"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  geom_smooth(se=FALSE)+
+  theme(text=element_text(size=18,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(14)))+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  #scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+```
+
+
+
+```{r}
+
+
+df_mergedAVG<-df.summary
+Testsheetavg<-subset(df_mergedAVG, Treatment=="GLP-1"|Treatment=="MGCD0103"
+                     |Treatment=="staurosporine"|Treatment=="trichostatin A"
+                     |Treatment=="DMSO 2%")
+
+Testsheetavg<-subset(Testsheetavg, Sex=="Female")
+Testsheetavg<-subset(Testsheetavg, Time<=45)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("GLP-1","MGCD0103"
+                                        ,"staurosporine","trichostatin A",
+                                        "DMSO 2%", "DMSO 4%"))
+
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(0, 30)+
+  scale_color_manual(values=c("#66FF66","#00CC00", "#669933","#336600","#000000","#666666"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+    geom_smooth(se=FALSE)+
+  theme(text=element_text(size=18,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(14)))+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  #scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

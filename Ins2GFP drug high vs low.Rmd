@@ -1,0 +1,608 @@
+---
+title: "High vs low"
+output: html_document
+date: "2023-03-22"
+---
+
+```{r setup, include=FALSE}
+library("factoextra")
+library("ggplot2")
+library('ggfortify')
+library("tidyverse")
+#library("dplyr") #already loaded by tidyverse
+library("data.table")
+#install.packages("here") #look at this package for setting your working directory - it makes your script reproducible on other systems
+library("here")
+library("pracma") #for AUC
+library("mclust")
+library("extrafont")
+library("RColorBrewer")
+library("scales")
+library("grid")
+library("gtable")
+library("pheatmap")
+library(xlsx)
+
+Difference<-function(y){
+  difference<-max(y)-min(y)}
+
+FWHM <- function (y){
+  x <- seq(1,length(y),1)
+  xmax <- x[y==max(y)]
+  x1 <- x[x < xmax][which.min(abs(y[x < xmax]-max(y)/2))]
+  x2 <- x[x > xmax][which.min(abs(y[x > xmax]-max(y)/2))]
+  fwhm <- x2 - x1
+  ifelse(length(fwhm>0),fwhm,0)
+}
+
+Acftime<-function(y){
+  acfall<-acf(y, lag.max=1100, plot = FALSE)
+  acfall2<- with(acfall, data.frame(lag, acf))
+  acfdiff<-diff(sign(acfall2$acf))
+  acfposition<-which(acfdiff==-2)
+  acftime<-acfposition[c(1)]
+  acftimefinal<-as.numeric(acftime)
+}
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+df_merged<-subset(Fullsheet48F1norm2_clean, Frame==3)
+df_merged<-subset(df_merged, Run=="R1")
+df_merged<-subset(df_merged, Treatment=="DMSO 2%")
+df_merged <- df_merged %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE)
+    )
+
+#`GFP Intensity` <- df_merged$scaled_FITC[df_merged$`Time (Hours)` == 0]
+
+`GFP Intensity` <-  df_merged$baseline_scaled_FITC
+dens <- densityMclust(`GFP Intensity`, G = 2)
+
+mean_1 <- dens$parameters$mean[1]
+mean_2 <- dens$parameters$mean[2]
+
+sd_1 <- sqrt(dens$parameters$variance$sigmasq[1])
+sd_2 <- sqrt(dens$parameters$variance$sigmasq[2])
+
+norm_dist_equation_1 <- function(x) 1/(sd_1*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_1)/sd_1)^2)
+norm_dist_equation_2 <- function(x) 1/(sd_2*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_2)/sd_2)^2)
+
+intersect_femalescaled1 <- curve_intersect(norm_dist_equation_1, norm_dist_equation_2, empirical = FALSE, 
+                           domain = c(mean_1, mean_2))[[1]]
+
+
+
+
+##########repeat 1########
+df_merged<-subset(Fullsheet48F1norm2_clean, Frame==3)
+df_merged<-subset(df_merged, Run=="R2")
+df_merged<-subset(df_merged, Treatment=="DMSO 2%")
+df_merged <- df_merged %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE)
+    )
+
+#`GFP Intensity` <- df_merged$scaled_FITC[df_merged$`Time (Hours)` == 0]
+
+`GFP Intensity` <-  df_merged$baseline_scaled_FITC
+dens <- densityMclust(`GFP Intensity`, G = 2)
+
+mean_1 <- dens$parameters$mean[1]
+mean_2 <- dens$parameters$mean[2]
+
+sd_1 <- sqrt(dens$parameters$variance$sigmasq[1])
+sd_2 <- sqrt(dens$parameters$variance$sigmasq[2])
+
+norm_dist_equation_1 <- function(x) 1/(sd_1*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_1)/sd_1)^2)
+norm_dist_equation_2 <- function(x) 1/(sd_2*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_2)/sd_2)^2)
+
+intersect_femalescaled2 <- curve_intersect(norm_dist_equation_1, norm_dist_equation_2, empirical = FALSE, 
+                           domain = c(mean_1, mean_2))[[1]]
+
+
+########repeat 2#########
+
+
+df_merged<-subset(Fullsheet48M1norm2_clean, Frame==3)
+df_merged<-subset(df_merged, Run=="R3")
+df_merged<-subset(df_merged, Treatment=="DMSO 2%")
+df_merged <- df_merged %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE)
+    )
+
+#`GFP Intensity` <- df_merged$scaled_FITC[df_merged$`Time (Hours)` == 0]
+
+`GFP Intensity` <-  df_merged$baseline_scaled_FITC
+dens <- densityMclust(`GFP Intensity`, G = 2)
+
+mean_1 <- dens$parameters$mean[1]
+mean_2 <- dens$parameters$mean[2]
+
+sd_1 <- sqrt(dens$parameters$variance$sigmasq[1])
+sd_2 <- sqrt(dens$parameters$variance$sigmasq[2])
+
+norm_dist_equation_1 <- function(x) 1/(sd_1*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_1)/sd_1)^2)
+norm_dist_equation_2 <- function(x) 1/(sd_2*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_2)/sd_2)^2)
+
+intersect_malescaled1 <- curve_intersect(norm_dist_equation_1, norm_dist_equation_2, empirical = FALSE, 
+                           domain = c(mean_1, mean_2))[[1]]
+
+
+
+######repeat4###########
+
+df_merged<-subset(Fullsheet48M1norm2_clean, Frame==3)
+df_merged<-subset(df_merged, Run=="R4")
+df_merged<-subset(df_merged, Treatment=="DMSO 2%")
+df_merged <- df_merged %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE)
+    )
+
+#`GFP Intensity` <- df_merged$scaled_FITC[df_merged$`Time (Hours)` == 0]
+
+`GFP Intensity` <-  df_merged$baseline_scaled_FITC
+dens <- densityMclust(`GFP Intensity`, G = 2)
+
+mean_1 <- dens$parameters$mean[1]
+mean_2 <- dens$parameters$mean[2]
+
+sd_1 <- sqrt(dens$parameters$variance$sigmasq[1])
+sd_2 <- sqrt(dens$parameters$variance$sigmasq[2])
+
+norm_dist_equation_1 <- function(x) 1/(sd_1*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_1)/sd_1)^2)
+norm_dist_equation_2 <- function(x) 1/(sd_2*sqrt(2*pi))*exp(1)^(-1/2*((x - mean_2)/sd_2)^2)
+
+intersect_malescaled2 <- curve_intersect(norm_dist_equation_1, norm_dist_equation_2, empirical = FALSE, 
+                           domain = c(mean_1, mean_2))[[1]]
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+p<-ggplot(Fullsheet48F1norm2_clean, aes(baseline_smooth_FITC)) + geom_density(fill = "darkgreen") + geom_vline(xintercept = density(Fullsheet48F1norm2$baseline_smooth_FITC)$x[125])
+
+temp<-subset(Fullsheet48F1norm2, Frame==4)
+
+peak1y<-which.max(density(temp$baseline_smooth_FITC)$y)
+peak1x<-density(temp$baseline_smooth_FITC)$x[peak1y]
+
+peak2y<- max(density(temp$baseline_smooth_FITC)$y[density(temp$baseline_smooth_FITC)$x >1])
+peak2x<-density(temp$baseline_smooth_FITC)$x[peak2y]
+
+DensityY <- density(temp$baseline_smooth_FITC)$y
+DensityX <- density(temp$baseline_smooth_FITC)$x
+
+MinYDensity<- min(DensityY[DensityX < 1.2 & DensityX > 0.22])
+which(DensityY == MinYDensity)
+
+p<-ggplot(temp, aes(baseline_smooth_FITC))+ 
+  geom_density() + 
+  geom_vline(xintercept = intersect_malesmooth)
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+```{r}
+A<-subset(temp7, Treatment=="GLP-1")
+unique(Fullsheet48F1norm2$CellID)
+A<-subset(Fullsheetloess2, CellID=="F14_109")
+```
+
+
+
+
+
+
+
+
+
+```{r}
+Testsheet<-subset(Fullsheet48M1norm2_clean, Frame==3)
+Testsheet<-subset(Testsheet, Run=="R4")
+#temp1<-subset(Fullsheet48M1norm2_clean, Frame<=4)
+temp1 <- Testsheet %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    #scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm=TRUE)
+    )
+
+temp1<-subset(temp1, baseline_scaled_FITC>=intersect_malescaled2)
+temp1$level<-"high"
+
+
+Testsheet<-subset(Fullsheet48M1norm2_clean, Frame==3)
+Testsheet<-subset(Testsheet, Run=="R4")
+temp2 <- Testsheet %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    #scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm=TRUE)
+    )
+
+
+#temp2<-subset(Fullsheet48M1norm2_clean, Frame<=4)
+temp2<-subset(temp2, baseline_scaled_FITC<=intersect_malescaled2)
+temp2$level<-"low"
+
+temp3<-full_join(temp1, temp2)
+#temp3<-temp3[-c(3,4,5,6,14)]
+
+
+
+Testsheet<-subset(Fullsheet48M1norm2_clean, Frame>=88&Frame<=90)
+Testsheet<-subset(Testsheet, Run=="R4")
+temp4 <- Testsheet %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    #scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm=TRUE)
+    )
+
+temp4<-subset(temp4, baseline_scaled_FITC>=intersect_malescaled2)
+temp4$final<-"high"
+#temp4<-temp4%>%
+  #dplyr::rename("finalscaled_FITC"=scaled_FITC)
+temp4<-temp4%>%
+  dplyr::rename("finalbaseline_scaled_FITC"=baseline_scaled_FITC)
+temp4<-temp4%>%
+  dplyr::rename("finalscaled_FITC"=scaled_FITC)
+temp4<-temp4%>%
+  dplyr::rename("finalTEXASRED"=mean_TEXASRED)
+
+
+Testsheet<-subset(Fullsheet48M1norm2_clean, Frame>=88&Frame<=90)
+Testsheet<-subset(Testsheet, Run=="R4")
+temp5 <- Testsheet %>%
+  dplyr::group_by(CellID, Treatment, Category, Sex) %>%
+  dplyr::summarise(
+    baseline_scaled_FITC = mean(baseline_scaled_FITC, na.rm=TRUE),
+    scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    #scaled_FITC = mean(scaled_FITC, na.rm=TRUE),
+    mean_TEXASRED = mean(TEXASRED, na.rm=TRUE)
+    )
+
+temp5<-subset(temp5, baseline_scaled_FITC<=intersect_malescaled2)
+temp5$final<-"low"
+#temp5<-temp5%>%
+  #dplyr::rename("finalscaled_FITC"=scaled_FITC)
+temp5<-temp5%>%
+  dplyr::rename("finalbaseline_scaled_FITC"=baseline_scaled_FITC)
+temp5<-temp5%>%
+  dplyr::rename("finalscaled_FITC"=scaled_FITC)
+temp5<-temp5%>%
+  dplyr::rename("finalTEXASRED"=mean_TEXASRED)
+
+temp6<-full_join(temp4, temp5)
+#temp6<-temp6[-c(3,4,5,6,14)]
+
+temp7<-full_join(temp3, temp6)
+
+
+temp7<-na.omit(temp7)
+temp7$lowdiff<-temp7$finalscaled_FITC-temp7$scaled_FITC
+temp7$highdiff<-temp7$baseline_scaled_FITC-temp7$finalbaseline_scaled_FITC
+Testsheethigh<-subset(temp7, level=="high"&final=="low")
+
+Testsheethigh$Type<-"hightolow"
+Testsheetlow<-subset(temp7, level=="low"&final=="high")
+Testsheetlow$Type<-"lowtohigh"
+Testsheethighlow<-full_join(Testsheethigh, Testsheetlow)
+
+
+
+Transitions1<-Testsheethigh%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    hightolow=length(CellID))
+
+Transitions2<-Testsheetlow%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    lowtohigh=length(CellID))
+
+Testsheet<-subset(temp7, level=="low")
+Transitions4<-Testsheet%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    lowcount=length(CellID))
+
+Testsheet<-subset(temp7, level=="high")
+Transitions5<-Testsheet%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    highcount=length(CellID))
+
+
+Transitions3<-temp7%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    count=length(CellID))
+
+
+Transitions<-full_join(Transitions1, Transitions2)
+Transitions<-full_join(Transitions, Transitions3)
+Transitions<-full_join(Transitions, Transitions4)
+Transitions<-full_join(Transitions, Transitions5)
+
+Transitions$hightolow_percent<-Transitions$hightolow/Transitions$count*100
+Transitions$lowtohigh_percent<-Transitions$lowtohigh/Transitions$count*100
+Transitions$hightolow_percent_pop<-Transitions$hightolow/Transitions$highcount*100
+Transitions$lowtohigh_percent_pop<-Transitions$lowtohigh/Transitions$lowcount*100
+
+Transitionsmale2<-Transitions
+Transitionsmalegraph2<-Transitions %>% pivot_longer(c(hightolow_percent_pop, lowtohigh_percent_pop),
+                                      names_to="Type",values_to="Transitions",values_drop_na = TRUE,)
+#Testsheet<-subset(Fullsheetendcamp, Treatment=="PKR inhibitor")
+
+
+```
+
+
+
+```{r}
+A<-subset(temp7, Treatment=="LY294002")
+Testsheet<-Fullsheet96M1norm2_clean
+#Testsheet$Frame<-Testsheet$Frame/2
+Cell1<-subset(Fullsheet96M1norm2_clean, CellID=="G09_1806")
+#Cell1<-Cell1[-c(1,2,3),]
+p<-ggplot(Cell1,aes(x=Time,y=DAPI,group=CellID))
+  p<-p+#geom_path(alpha=1.0,colour="blue")+
+  #geom_path(aes(x=Time,y=TEXASRED,group=CellID),alpha=1.0,colour="red")+
+  geom_line(aes(x=Time,y=FITC,group=CellID),alpha=1.0,colour="green", size=2)+
+  facet_wrap("Well")+
+  labs(x="Time (hrs)",y="Intensity")+
+  ylim(0, 50000)+
+  #scale_x_continuous(breaks = pretty_breaks(n=10))+
+  theme(axis.line = element_line(colour = 'black', size = 1.5))+
+  theme(axis.title = element_text(family = "Arial", colour="black", size=12))+
+  theme(axis.text.x = element_text(family = "Arial",colour="black",size=12))+
+  theme(axis.text.y = element_text(family = "Arial",colour="black",size=12))+
+  theme(legend.text = element_text(family = "Arial",colour="black",size=12))+
+  theme(legend.title = element_text(family = "Arial",colour="black",size=12))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+```
+
+
+
+
+
+
+
+
+```{r}
+temp1<-subset(Fullsheet48M1norm2, Frame==4)
+temp1<-subset(temp1, baseline_smooth_FITC>=intersect_malesmooth)
+temp1$level<-"high"
+
+temp2<-subset(Fullsheet48M1norm2, Frame==4)
+temp2<-subset(temp2, baseline_smooth_FITC<=intersect_malesmooth)
+temp2$level<-"low"
+
+temp3<-full_join(temp1, temp2)
+temp3<-temp3[-c(3,4,5,6,14)]
+
+
+
+temp4<-subset(Fullsheet48M1norm2, Frame==88)
+temp4<-subset(temp4, baseline_smooth_FITC>=intersect_malesmooth)
+temp4$final<-"high"
+temp4<-temp4%>%
+  dplyr::rename("finalsmooth_FITC"=smooth_FITC)
+temp4<-temp4%>%
+  dplyr::rename("finalbaseline_smooth_FITC"=baseline_smooth_FITC)
+temp4<-temp4%>%
+  dplyr::rename("finalnorm_FITC"=norm_FITC)
+
+
+temp5<-subset(Fullsheet48M1norm2, Frame==88)
+temp5<-subset(temp5, baseline_smooth_FITC<intersect_malesmooth)
+temp5$final<-"low"
+temp5<-temp5%>%
+  dplyr::rename("finalsmooth_FITC"=smooth_FITC)
+temp5<-temp5%>%
+  dplyr::rename("finalbaseline_smooth_FITC"=baseline_smooth_FITC)
+temp5<-temp5%>%
+  dplyr::rename("finalnorm_FITC"=norm_FITC)
+
+temp6<-full_join(temp4, temp5)
+temp6<-temp6[-c(3,4,5,6,14)]
+
+temp7<-full_join(temp3, temp6)
+
+
+Testsheethigh<-subset(temp7, level=="high"&final=="low")
+Testsheethigh$Type<-"hightolow"
+Testsheetlow<-subset(temp7, level=="low"&final=="high")
+Testsheetlow$Type<-"lowtohigh"
+Testsheethighlow<-full_join(Testsheethigh, Testsheetlow)
+
+
+
+Transitions1<-Testsheethigh%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    hightolow=length(CellID))
+
+Transitions2<-Testsheetlow%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    lowtohigh=length(CellID))
+
+Testsheet<-subset(temp7, level=="low")
+Transitions4<-Testsheet%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    lowcount=length(CellID))
+
+Testsheet<-subset(temp7, level=="high")
+Transitions5<-Testsheet%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    highcount=length(CellID))
+
+
+Transitions3<-temp7%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    count=length(CellID))
+
+Transitions<-full_join(Transitions1, Transitions2)
+Transitions<-full_join(Transitions, Transitions3)
+Transitions<-full_join(Transitions, Transitions4)
+Transitions<-full_join(Transitions, Transitions5)
+
+Transitions$hightolow_percent<-Transitions$hightolow/Transitions$count*100
+Transitions$lowtohigh_percent<-Transitions$lowtohigh/Transitions$count*100
+Transitions$hightolow_percent_pop<-Transitions$hightolow/Transitions$highcount*100
+Transitions$lowtohigh_percent_pop<-Transitions$lowtohigh/Transitions$lowcount*100
+
+
+Transitionsmalenorm<-Transitions %>% pivot_longer(c(hightolow_percent_pop, lowtohigh_percent_pop),
+                                      names_to="Type",values_to="Transitions",values_drop_na = TRUE,)
+#Testsheet<-subset(Fullsheetendcamp, Treatment=="PKR inhibitor")
+
+
+
+
+
+
+
+```
+
+
+```{r}
+write_xlsx(Testsheetlow,"E:\\lowtohigh_male2.xlsx")
+```
+
+
+
+```{r}
+Transitionsp1_plot$Treatment<-gsub("DMSO 2%", "DMSO 0.02%", Transitionsp1_plot$Treatment)
+Transitionsmalegraph2$Treatment<-gsub("DMSO 2%", "DMSO 0.02%", Transitionsmalegraph2$Treatment)
+```
+
+
+```{r}
+Transitionsfemalegraph2<-Transitionsfemale %>% pivot_longer(c(hightolow_percent_pop, lowtohigh_percent_pop),
+                                      names_to="Type",values_to="Transitions",values_drop_na = FALSE,)
+Transitionsmalegraph2<-Transitionsmale %>% pivot_longer(c(hightolow_percent_pop, lowtohigh_percent_pop),
+                                      names_to="Type",values_to="Transitions",values_drop_na = FALSE,)
+```
+
+
+
+
+
+
+
+
+```{r}
+Testsheetavg<-subset(Transitionsfemalegraph, Treatment=="DMSO 0.02%"|Treatment=="GLP-1"|Treatment=="IBMX" 
+                         |Treatment=="arginine"|Treatment=="staurosporine"|Treatment=="rosiglitazone")
+#Testsheetavg<-subset(Testsheetavg, Sex=="Male")
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                          levels=c("DMSO 0.02%","GLP-1","IBMX","arginine","staurosporine","rosiglitazone"))
+p<-Testsheetavg%>%
+  ggplot(aes(x=Treatment, y=Transitions, fill=Type))+
+  geom_bar(stat = "identity", width=0.5, position = position_dodge(0.5))+
+  scale_fill_manual(values=c("#FF9900","#009900","3300FF"))+
+  scale_color_manual(values=c("#FF9900","#009900","#0000CC"))+
+  ylim(0, 30)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  #geom_hline(yintercept = 0)+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+  xlab("\nTreatment")+
+  ylab("% of cells transitioning\n")+
+  theme(legend.position="none")+
+  theme(text=element_text(size=20,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(12)))
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  
+
+
+
+
+```
+
+
+
+
+
+
+```{r}
+Testsheetavg<-subset(Transitionsfemalegraph2, Treatment=="alpha amanitin"|Treatment== "triptolide"|Treatment== "MGCD0103"| 
+                    Treatment=="DMSO 0.02%" |Treatment=="LY294002"|Treatment=="cyclohexamide"|Treatment=="APY29")
+Testsheetavg[is.na(Testsheetavg)] <- 0
+
+#Testsheetavg<-subset(Testsheetavg, Sex=="Male")
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                          levels=c("DMSO 0.02%","alpha amanitin","triptolide","MGCD0103",
+                                   "LY294002","cyclohexamide","APY29"))
+p<-Testsheetavg%>%
+  ggplot(aes(x=Treatment, y=Transitions, fill=Type))+
+  geom_bar(stat = "identity", width=0.5, position = position_dodge(0.5))+
+  scale_fill_manual(values=c("#FF9900","#009900","3300FF"))+
+  scale_color_manual(values=c("#FF9900","#009900","#0000CC"))+
+  ylim(0, 30)+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  #geom_hline(yintercept = 0)+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+  xlab("\nTreatment")+
+  ylab("% of cells transitioning\n")+
+  theme(legend.position="none")+
+  theme(text=element_text(size=20,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(11)))
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  
+
+
+```
+
+
+
+
+
+
+
+

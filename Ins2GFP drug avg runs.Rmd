@@ -1,0 +1,2095 @@
+---
+title: "avg plots"
+output: html_document
+date: "2023-04-18"
+---
+
+```{r setup, include=FALSE}
+library("tidyverse")
+#library("dplyr") #already loaded by tidyverse
+library("data.table")
+
+library("reconPlots")
+#install.packages("here") #look at this package for setting your working directory - it makes your script reproducible on other systems
+library("here")
+library("pracma") #for AUC
+library("mclust")
+library("extrafont")
+library("RColorBrewer")
+library("scales")
+library("grid")
+library("gtable")
+library("pheatmap")
+library("readxl")
+library("tibble")
+library("dbplyr")
+library("plyr")
+library("ggrepel")
+library("ggbeeswarm")
+library(ggpmisc)
+
+
+library(ggplot2)
+library(ggpubr)
+library(rstatix)
+library(ggsignif)
+library(ggforce)
+library(Hmisc)
+library(ggpubr)
+library(xlsx)
+library(writexl)
+library(plotrix)
+library(ggnewscale)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+
+temp1<-df_summaryF1_smooth
+#temp1$Run<-"R1"
+#temp1<-temp1[-c(11)]
+#temp1<-subset(temp1, Sex=="Female")
+
+temp2<-df_summaryM196_smooth
+#temp2$Run<-"R2"
+#temp2<-temp2[-c(11)]
+
+temp3<-subset(df.summarybaseline, Sex=="Male")
+temp3$Run<-"R5"
+temp3<-temp3[-c(12,13,15)]
+temp3<-temp3%>%
+  dplyr::rename(smooth_FITC="smooth2_FITC")
+
+temp4<-subset(df.summarybaseline, Sex=="Female")
+temp4$Run<-"R6"
+temp4<-temp4[-c(12,13,15)]
+temp4<-temp4%>%
+  dplyr::rename(smooth_FITC="smooth2_FITC")
+
+Avgdf.summary<-full_join(temp1, temp2)
+Avgdf.summary<-full_join(Avgdf.summary, temp3)
+Avgdf.summary<-full_join(Avgdf.summary, temp4)
+
+
+```
+
+
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+Avgdf.summary$Treatment<-gsub("DHDBC","DHBDC",Avgdf.summary$Treatment)
+Avgdf.summary$Treatment<-gsub("pramlintide","pramlinitide",Avgdf.summary$Treatment)
+Avgdf.summary$Category<-gsub("ER stress 2", "ER stress", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("ER stress 1", "ER stress", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS upreg 1", "INS upregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS upreg 2", "INS upregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS downreg 1", "INS downregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS downreg 2", "INS downregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS downregulation 1", "INS downregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS downregulation 2", "INS downregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS upregulation 1", "INS upregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("INS upregulation 2", "INS upregulation", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("secretion upreg", "secretion increase", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("secretion downreg", "secretion decrease", Avgdf.summary$Category)
+Avgdf.summary$Category<-gsub("ETOH control", "control", Avgdf.summary$Category)
+temp<-subset(Avgdf.summary, Treatment=="GLP-1"|Treatment=="IBMX")
+temp$Category<-"cAMP upregulation"
+
+Avgdf.summary2<-subset(Avgdf.summary, !Treatment=="GLP-1")
+Avgdf.summary2<-subset(Avgdf.summary2, !Treatment=="IBMX")
+Avgdf.summary2<-full_join(Avgdf.summary2,temp)
+#temp<-subset(Avgdf.summary2, Treatment=="epinephrine")
+#temp<-subset(temp, !Run=="R1")
+#temp<-subset(temp, !Run=="R2")
+#Avgdf.summary2<-subset(Avgdf.summary2, !Treatment=="epinephrine")
+#Avgdf.summary2<-full_join(Avgdf.summary2,temp)
+unique(Avgdf.summary$Category)
+
+
+
+
+temp<-subset(Avgdf.summary2, Treatment=="IBMX"|Treatment=="epinephrine"|Treatment=="pramlinitide"|Treatment=="GLP-1"|Treatment=="SST")
+temp$Category2<-"cAMP signalling"
+
+
+temp1<-subset(Avgdf.summary2, Treatment=="tacrolimus"|Treatment=="cyclosporin A"|Treatment=="okadaic acid")
+temp1$Category2<-"calcineurin"
+
+temp2<-subset(Avgdf.summary2, Treatment=="diazoxide"|Treatment=="verapamil"|Treatment=="tolbutamide")
+temp2$Category2<-"plasma membrane excitibility"
+
+temp3<-subset(Avgdf.summary2, Treatment=="palmitic acid"|Treatment=="sodium butyrate"|Treatment=="arginine")
+temp3$Category2<-"nutrients"
+
+
+temp4<-subset(Avgdf.summary2, Treatment=="HNMPA"|Treatment=="S961"|Treatment=="AS1842856"|Treatment=="LY294002"|Treatment=="wortmannin"|Treatment=="AICAR"|Treatment=="metformin"|Treatment=="staurosporine")
+temp4$Category2<-"Insulin and other signalling"
+
+
+temp5<-subset(Avgdf.summary2, Treatment=="cyclohexamide"|Treatment=="PKR inhibitor"|Treatment=="isrib"|Treatment=="PERK inhibitor I"|Treatment=="DHBDC"|Treatment=="CCT020312"|Treatment=="sal003"|Treatment=="azoramide")
+temp5$Category2<-"Translation factors"
+
+temp6<-subset(Avgdf.summary2, Treatment=="DRB"|Treatment=="actinomycin D"|Treatment=="alpha amanitin"|Treatment=="trichostatin A"|Treatment=="MGCD0103"|Treatment=="triptolide")
+temp6$Category2<-"Transcription"
+
+
+temp7<-subset(Avgdf.summary2, Treatment=="thapsigargin"|Treatment=="ryanodine"|Treatment=="xestospongin")
+temp7$Category2<-"ER channels"
+
+temp8<-subset(Avgdf.summary2, Treatment=="bortezomib"|Treatment=="MG132"|Treatment=="tunicamycin"|Treatment=="eeyarestatin I")
+temp8$Category2<-"protein degradation"
+
+temp9<-subset(Avgdf.summary2, Treatment=="rosiglitazone"|Treatment=="dexamethasone")
+temp9$Category2<-"nuclear receptors"
+
+temp10<-subset(Avgdf.summary2, Treatment=="sunitinib"|Treatment=="APY29")
+temp10$Category2<-"endonucleases"
+
+
+temp11<-subset(Avgdf.summary2, Treatment=="DMSO 0.02%"|Treatment=="ETOH"|Treatment=="DMSO 4%")
+temp11$Category2<-"control"
+
+temp12<-subset(Avgdf.summary2, Treatment=="isoxazole 9")
+temp12$Category2<-"extra"
+
+
+Avgdf.summary3<-full_join(temp, temp1)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp2)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp3)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp4)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp5)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp6)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp7)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp8)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp9)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp10)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp11)
+Avgdf.summary3<-full_join(Avgdf.summary3, temp12)
+
+
+finaldf.summarySex<- Avgdf.summary3 %>%
+  dplyr::group_by(Time, Treatment, Sex, Category2) %>%
+  dplyr::summarise(
+    sd = std.error(smooth_FITC, na.rm = TRUE),
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+
+
+
+
+
+finaldf.summary<- Avgdf.summary3 %>%
+  dplyr::group_by(Time, Treatment, Category2) %>%
+  dplyr::summarise(
+    sd = std.error(smooth_FITC, na.rm = TRUE),
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+
+
+temp<-subset(Avgdf.summary3,Treatment=="epinephrine")
+temp<-subset(temp, !Run=="R1")
+temp<-subset(temp, !Run=="R2")
+
+Avgdf.summary4<-subset(Avgdf.summary3, !Treatment=="epinephrine")
+Avgdf.summary4<-full_join(Avgdf.summary4, temp)
+
+
+
+
+
+finaldf.summaryNEP<- Avgdf.summary4 %>%
+  dplyr::group_by(Time, Treatment, Category2) %>%
+  dplyr::summarise(
+    sd = std.error(smooth_FITC, na.rm = TRUE),
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+
+finaldf.summarySex<-finaldf.summarySex[-c(5)]
+
+#finaldf.summarySex%>%
+  #pivot_wider(names_from = Sex, values_from=c(smooth_FITC, mean_TEXASRED))
+
+```
+
+```{r}
+Testsheet<-subset(Avgdf.summary, Time<=45&Time>=43)
+Testsheet<-subset(Testsheet, !Treatment=="DMSO 4%")
+GFPavg<- Testsheet %>%
+  dplyr::group_by(Treatment, Run) %>%
+  dplyr::summarise(
+    #sd = std.error(smooth_FITC, na.rm = TRUE),
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    #mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+GFPavg<-pivot_wider(GFPavg, names_from = Run, values_from = smooth_FITC)
+
+rownames(GFPavg) = GFPavg$Treatment
+GFPavg<-as.data.frame(GFPavg)
+rownames(GFPavg) = GFPavg$Treatment
+GFPavgnorm <- as.data.frame(scale(GFPavg[,2:ncol(GFPavg)],
+                                       center=T,scale=T))
+
+
+GFPavgnorm<-GFPavgnorm[c(1,2,6,3,4,5)]
+breaks<-seq(-2, 1.5, length.out=50)
+mycolors<-colorRampPalette(c("purple", "aquamarine","yellow"))(50)
+
+
+Sex<-c("Female","Female","Female","Male","Male","Male")
+Sex<-as.data.frame(Sex)
+rownames(Sex)=colnames(GFPavgnorm)
+#Sex$Features<-c("Max GFP", "Mean GFP", "Mean cell death","Max GFP", "Mean GFP", "Mean cell death")
+
+
+annotcolorcode<-list(
+  "Sex"=c("Female"="#FF6699", "Male"= "#3366FF"))
+  #"Features"=c("Max GFP"="#9933FF", "Mean GFP"="#00CCCC", "Mean cell death"="#FFCC33"))
+
+
+#annotcolorcode<-list(Features=annotcolorcode)
+
+
+p<-pheatmap(GFPavgnorm,
+         annotation_col = Sex,
+         annotation_colors = annotcolorcode,
+         breaks=breaks,
+         color=mycolors,
+         #color = colorRampPalette(rev(brewer.pal(n = 7, name = "PiYG")))(100),
+         cluster_rows=T, show_rownames=T, angle_col = "45",
+         cluster_cols=F)
+
+
+
+```
+
+```{r}
+
+#Testsheet<-subset(Avgdf.summary, Time<=45&Time>=43)
+Testsheet<-subset(Avgdf.summary, !Treatment=="DMSO 4%")
+Testsheet<-subset(Testsheet, Time>=10)
+GFPmax<- Testsheet %>%
+  dplyr::group_by(Treatment, Run) %>%
+  dplyr::summarise(
+    #sd = std.error(smooth_FITC, na.rm = TRUE),
+    smooth_FITC = max(smooth_FITC, na.rm = TRUE),
+    #mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+GFPmax<-pivot_wider(GFPmax, names_from = Run, values_from = smooth_FITC)
+
+rownames(GFPmax) = GFPmax$Treatment
+GFPmax<-as.data.frame(GFPmax)
+rownames(GFPmax) = GFPmax$Treatment
+#GFPmaxnorm<-GFPmax[c(-1)]
+GFPmaxnorm <- as.data.frame(scale(GFPmax[,2:ncol(GFPmax)],
+                                       center=T,scale=T))
+
+
+GFPmaxnorm<-GFPmaxnorm[c(1,2,6,3,4,5)]
+breaks<-seq(-1.5, 1.5, length.out=50)
+mycolors<-colorRampPalette(c("purple", "aquamarine","yellow"))(50)
+
+
+Sex<-c("Female","Female","Female","Male","Male","Male")
+Sex<-as.data.frame(Sex)
+rownames(Sex)=colnames(GFPmaxnorm)
+#Sex$Features<-c("Max GFP", "Mean GFP", "Mean cell death","Max GFP", "Mean GFP", "Mean cell death")
+
+
+annotcolorcode<-list(
+  "Sex"=c("Female"="#FF6699", "Male"= "#3366FF"))
+  #"Features"=c("Max GFP"="#9933FF", "Mean GFP"="#00CCCC", "Mean cell death"="#FFCC33"))
+
+
+#annotcolorcode<-list(Features=annotcolorcode)
+
+
+p<-pheatmap(GFPmaxnorm,
+         annotation_col = Sex,
+         annotation_colors = annotcolorcode,
+         breaks=breaks,
+         color=mycolors,
+         #color = colorRampPalette(rev(brewer.pal(n = 7, name = "PiYG")))(100),
+         cluster_rows=T, show_rownames=T, angle_col = "45",
+         cluster_cols=F)
+
+
+
+
+
+
+
+
+
+```
+
+```{r}
+
+#Testsheet<-subset(Avgdf.summary, Time<=45&Time>=43)
+Testsheet<-subset(Avgdf.summary, !Treatment=="DMSO 4%")
+Testsheet<-subset(Testsheet, Time>=43)
+celldeath<- Testsheet %>%
+  dplyr::group_by(Treatment, Run) %>%
+  dplyr::summarise(
+    #sd = std.error(smooth_FITC, na.rm = TRUE),
+    #smooth_FITC = max(smooth_FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+celldeath<-pivot_wider(celldeath, names_from = Run, values_from = mean_TEXASRED)
+
+rownames(celldeath) = celldeath$Treatment
+celldeath<-as.data.frame(celldeath)
+rownames(celldeath) = celldeath$Treatment
+#celldeathnorm<-celldeath[c(-1)]
+celldeathnorm <- as.data.frame(scale(celldeath[,2:ncol(celldeath)],
+                                       center=T,scale=T))
+
+
+celldeathnorm<-celldeathnorm[c(1,2,6,3,4,5)]
+breaks<-seq(-0.5, 1.5, length.out=50)
+mycolors<-colorRampPalette(c("purple", "aquamarine","yellow"))(50)
+
+
+Sex<-c("Female","Female","Female","Male","Male","Male")
+Sex<-as.data.frame(Sex)
+rownames(Sex)=colnames(celldeathnorm)
+#Sex$Features<-c("Max GFP", "Mean GFP", "Mean cell death","Max GFP", "Mean GFP", "Mean cell death")
+
+
+annotcolorcode<-list(
+  "Sex"=c("Female"="#FF6699", "Male"= "#3366FF"))
+  #"Features"=c("Max GFP"="#9933FF", "Mean GFP"="#00CCCC", "Mean cell death"="#FFCC33"))
+
+
+#annotcolorcode<-list(Features=annotcolorcode)
+
+
+p<-pheatmap(celldeathnorm,
+         annotation_col = Sex,
+         annotation_colors = annotcolorcode,
+         breaks=breaks,
+         color=mycolors,
+         #color = colorRampPalette(rev(brewer.pal(n = 7, name = "PiYG")))(100),
+         cluster_rows=T, show_rownames=T, angle_col = "45",
+         cluster_cols=F)
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+
+Testsheet<-subset(finaldf.summarySex, Sex=="Male")
+Testsheet<-subset(Testsheet, !Treatment=="DMSO 4%")
+#Testsheet<-subset(Testsheet, !Treatment=="actinomycin D")
+#Testsheet<-subset(Testsheet, !Treatment=="eeyarestatin I")
+#Testsheet<-subset(Testsheet, !Sex=="Male")
+#Testsheet<-subset(Testsheet, Time<=45)
+Testsheet48_2<-subset(Testsheet, Time>=10)
+Testsheet72_2<-subset(Testsheet, Time<=72)
+#Testsheet48_2$changeGFP<-Testsheet48_2$baseline_FITC-Testsheet2_2$baseline_FITC
+#Testsheet<-subset(Testsheet, Sex=="Male")
+#Testsheet<-subset(Testsheet, Frame<=90)
+
+#Testsheet<-subset(Testsheet, Glucose=="15")
+#Testsheet<-subset(Testsheet, FBS=="positive")
+#Testsheet<-subset(Testsheet, Frame<=5)
+featuresGFPMale<-tibble(Treatment=sapply(unique(Testsheet$Treatment),function(c){
+                      unique(Testsheet$Treatment[Testsheet$Treatment==c])
+                    }), 
+                    maxGFP=sapply(unique(Testsheet48_2$Treatment),function(c){
+                      max(Testsheet48_2$smooth_FITC[Testsheet48_2$Treatment==c],na.rm = T)
+                    }),
+                    meanGFP=sapply(unique(Testsheet$Treatment),function(c){
+                      mean(Testsheet$smooth_FITC[Testsheet$Treatment==c],na.rm = T)
+                    }),
+                    deviationGFP=sapply(unique(Testsheet$Treatment),function(c){
+                      mad(Testsheet$smooth_FITC[Testsheet$Treatment==c],na.rm = T)
+                    }),
+                    #sharpGFP=sapply(unique(Testsheet$Treatment),function(c){
+                     # sum(abs(diff(Testsheet$scaled_FITC[Testsheet$Treatment==c]))>2.0)
+                    #}),
+                    #fwhmGFP=sapply(unique(Testsheet$Treatment),function(c){
+                     # FWHM(Testsheet$smooth2_FITC[Testsheet$Treatment==c])
+                    #}),
+                    acfGFP=sapply(unique(Testsheet$Treatment),function(c){
+                      Acftime(Testsheet$smooth_FITC[Testsheet$Treatment==c])
+                    }),
+                    differenceGFP=sapply(unique(Testsheet72_2$Treatment),function(c){
+                      Difference(Testsheet72_2$smooth_FITC[Testsheet72_2$Treatment==c])
+                    }),                  
+                    meanPI=sapply(unique(Testsheet72_2$Treatment),function(c){
+                     mean(Testsheet72_2$mean_TEXASRED[Testsheet72_2$Treatment==c])
+                    }),
+                    )
+
+
+Testsheet<-subset(finaldf.summarySex, !Sex=="Male")
+Testsheet<-subset(Testsheet, !Treatment=="DMSO 4%")
+#Testsheet<-subset(Testsheet, !Treatment=="actinomycin D")
+#Testsheet<-subset(Testsheet, !Treatment=="eeyarestatin I")
+#Testsheet<-subset(Testsheet, !Sex=="Male")
+#Testsheet<-subset(Testsheet, Time<=45)
+Testsheet48_2<-subset(Testsheet, Time>=10)
+Testsheet72_2<-subset(Testsheet, Time<=72)
+#Testsheet48_2$changeGFP<-Testsheet48_2$baseline_FITC-Testsheet2_2$baseline_FITC
+#Testsheet<-subset(Testsheet, Sex=="Male")
+#Testsheet<-subset(Testsheet, Frame<=90)
+
+#Testsheet<-subset(Testsheet, Glucose=="15")
+#Testsheet<-subset(Testsheet, FBS=="positive")
+#Testsheet<-subset(Testsheet, Frame<=5)
+featuresGFPFemale<-tibble(Treatment=sapply(unique(Testsheet$Treatment),function(c){
+                      unique(Testsheet$Treatment[Testsheet$Treatment==c])
+                    }), 
+                    maxGFP=sapply(unique(Testsheet48_2$Treatment),function(c){
+                      max(Testsheet48_2$smooth_FITC[Testsheet48_2$Treatment==c],na.rm = T)
+                    }),
+                    meanGFP=sapply(unique(Testsheet$Treatment),function(c){
+                      mean(Testsheet$smooth_FITC[Testsheet$Treatment==c],na.rm = T)
+                    }),
+                    deviationGFP=sapply(unique(Testsheet$Treatment),function(c){
+                      mad(Testsheet$smooth_FITC[Testsheet$Treatment==c],na.rm = T)
+                    }),
+                    #sharpGFP=sapply(unique(Testsheet$Treatment),function(c){
+                     # sum(abs(diff(Testsheet$scaled_FITC[Testsheet$Treatment==c]))>2.0)
+                    #}),
+                    #fwhmGFP=sapply(unique(Testsheet$Treatment),function(c){
+                     # FWHM(Testsheet$smooth2_FITC[Testsheet$Treatment==c])
+                    #}),
+                    acfGFP=sapply(unique(Testsheet$Treatment),function(c){
+                      Acftime(Testsheet$smooth_FITC[Testsheet$Treatment==c])
+                    }),
+                    differenceGFP=sapply(unique(Testsheet72_2$Treatment),function(c){
+                      Difference(Testsheet72_2$smooth_FITC[Testsheet72_2$Treatment==c])
+                    }),                  
+                    meanPI=sapply(unique(Testsheet72_2$Treatment),function(c){
+                     mean(Testsheet72_2$mean_TEXASRED[Testsheet72_2$Treatment==c])
+                    }),
+                    )
+
+
+
+
+```
+
+
+
+
+```{r}
+featuresGFPFemale2<-featuresGFPFemale[-c(4,5,6)]
+featuresGFPMale2<-featuresGFPMale[-c(4,5,6)]
+featuresGFPFemale2<-featuresGFPFemale2%>%
+  dplyr::rename(maxGFP_female="maxGFP")
+
+featuresGFPMale2<-featuresGFPMale2%>%
+  dplyr::rename(maxGFP_male="maxGFP")
+
+featuresGFPFemale2<-featuresGFPFemale2%>%
+  dplyr::rename(meanGFP_female="meanGFP")
+
+featuresGFPMale2<-featuresGFPMale2%>%
+  dplyr::rename(meanGFP_male="meanGFP")
+
+
+featuresGFPFemale2<-featuresGFPFemale2%>%
+  dplyr::rename(meanPI_female="meanPI")
+
+featuresGFPMale2<-featuresGFPMale2%>%
+  dplyr::rename(meanPI_male="meanPI")
+
+
+featuresGFP<-full_join(featuresGFPFemale2, featuresGFPMale2)
+
+
+#featuresGFP<-featuresGFPallrelevant
+rownames(featuresGFP) = featuresGFP$Treatment
+featuresGFP<-as.data.frame(featuresGFP)
+rownames(featuresGFP) = featuresGFP$Treatment
+featuresNormGFP <- as.data.frame(scale(featuresGFP[,2:ncol(featuresGFP)],
+                                       center=T,scale=T))
+
+```
+
+
+
+
+
+
+```{r}
+
+featuresNormGFP <- as.data.frame(scale(featuresGFP[,2:ncol(featuresGFP)],
+                                       center=T,scale=T))
+
+breaks<-seq(-2, 1.5, length.out=50)
+mycolors<-colorRampPalette(c("purple", "aquamarine","yellow"))(50)
+
+Sex<-c("Female","Female","Female","Male","Male","Male")
+Sex<-as.data.frame(Sex)
+rownames(Sex)=colnames(featuresNormGFP)
+Sex$Features<-c("Max GFP", "Mean GFP", "Mean cell death","Max GFP", "Mean GFP", "Mean cell death")
+
+
+annotcolorcode<-list(
+  "Sex"=c("Female"="#FF6699", "Male"= "#3366FF"),
+  "Features"=c("Max GFP"="#9933FF", "Mean GFP"="#00CCCC", "Mean cell death"="#FFCC33"))
+
+
+#annotcolorcode<-list(Features=annotcolorcode)
+
+
+p<-pheatmap(featuresNormGFP,
+         annotation_col = Sex,
+         annotation_colors = annotcolorcode,
+         breaks=breaks,
+         color=mycolors,
+         #color = colorRampPalette(rev(brewer.pal(n = 7, name = "PiYG")))(100),
+         cluster_rows=T, show_rownames=T, angle_col = "45",
+         cluster_cols=F)
+         #scale="column")
+
+featuresnormavg<-featuresGFP[c(1,3,6)]
+featuresnormavg$avg<-featuresnormavg$meanGFP_female+featuresnormavg$meanGFP_male
+featuresnormavg$avg<-featuresnormavg$avg/2
+write_xlsx(featuresnormavg,"E:\\featuresnorm.xlsx")
+
+```
+
+
+
+
+```{r}
+
+Testsheet<-pvalue_treatments
+Testsheet<-Testsheet%>%arrange(desc(smooth_FITC))
+P_value<-Testsheet$pvalue2
+
+Mean<-Testsheet$smooth_FITC+2.6162717
+
+#Testsheetavg$Drug<-factor(Testsheetavg$Drug, levels=c("DMSO", "0.1Tg","1Tg","10Tg","C","Cyto","Cyto2.5","Cyto5","Cyto10" ))
+breaksp<-c(0,1,2)
+
+breaks<-c(-10,-5,0,5)
+mypallette<-c("grey", "yellow","blue","green")
+p <- Testsheet%>%
+  ggplot(aes(x = "GFP", y = reorder(group2, -smooth_FITC), size = P_value, color= Mean)) +
+  geom_point()+
+  scale_size_continuous(range = c(12, 45), breaks=breaksp, limits=c(0,2))+
+  #facet_grid(.~ type)+
+ # guides(size=guide_legend(order=1))+
+  labs(y="Treatment", color="GFP fluorescence", size="-log10(p-value)")+
+  scale_color_gradientn(colours=mypallette, limits=c(-10,5))+
+  #scale_color_gradient2(low="grey", mid="yellow",high ="purple", breaks=breaks, labels=breaks)+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(legend.key = element_rect(size = 5),
+        legend.key.size = unit(1.5, 'lines'))+
+  theme(text=element_text(size=40,  family="Helvetica"))+
+  theme(axis.text = element_text(family="Helvetica", color="black", size=(18)))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(legend.spacing.y = unit(3.0, 'cm')) +
+  #theme(legend.text = element_text( margin = margin(r = 30, unit = "cm")))+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+
+ggsave(filename="E:/alltreatments.pdf",width=20,height=40,units="in",dpi=600, limitsize = FALSE)
+
+
+```
+
+
+
+
+```{r}
+
+
+Testsheet48_2<-subset(Avgdf.summary3, Time>=43 & Time<=45)
+df.summary48<- Testsheet48_2 %>%
+  dplyr::group_by(Treatment, Category2, Run) %>%
+  dplyr::summarise(
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    mean_TEXASRED= mean(mean_TEXASRED, na.rm=TRUE)
+  )
+temp<-subset(df.summary48, Treatment=="epinephrine")
+temp<-subset(temp, !Run=="R1")
+temp<-subset(temp, !Run=="R2")
+temp1<-subset(df.summary48, Treatment=="epinephrine"&Run=="R1")
+temp1$smooth_FITC<--2
+temp2<-subset(df.summary48, Treatment=="epinephrine"&Run=="R2")
+temp2$smooth_FITC<--2
+temp<-full_join(temp, temp1)
+temp<-full_join(temp, temp2)
+
+df.summary48<-subset(df.summary48, !Treatment=="epinephrine")
+df.summary48<-full_join(df.summary48, temp)
+
+
+df.summary48 <- df.summary48 %>% ungroup
+df.summary48<-df.summary48[c(1,4)]
+df.summary48$Treatment<-as.character(df.summary48$Treatment)
+
+aovall<-aov(smooth_FITC ~ Treatment, data=df.summary48)
+summary(aovall)
+
+df.summary48 <- df.summary48 %>% ungroup
+
+pwc <- df.summary48 %>%
+  pairwise_t_test(
+    smooth_FITC ~ Treatment, paired = TRUE,
+    p.adjust.method = "none"
+    )
+
+temp<-subset(pwc, group1=="DMSO 0.02%" |group2=="DMSO 0.02%")
+
+temp2<-subset(temp, group1=="DMSO 0.02%")
+temp3<-subset(temp, group2=="DMSO 0.02%")
+
+temp3<-temp3%>%
+  dplyr::rename(group3="group1")
+temp3<-temp3%>%
+  dplyr::rename(group1="group2")
+temp3<-temp3%>%
+  dplyr::rename(group2="group3")
+temp<-full_join(temp2, temp3)
+tempz<-subset(temp, !group2=="DMSO 4%")
+
+
+
+
+
+Avgdf.summary_NEP<-Avgdf.summary3
+temp<-subset(Avgdf.summary_NEP, Treatment=="epinephrine")
+temp<-subset(temp, !Run=="R1")
+temp<-subset(temp, !Run=="R2")
+temp1<-subset(Avgdf.summary_NEP, Treatment=="epinephrine"&Run=="R1")
+temp1$smooth_FITC<--2
+temp2<-subset(Avgdf.summary_NEP, Treatment=="epinephrine"&Run=="R2")
+temp2$smooth_FITC<--2
+temp<-full_join(temp, temp1)
+temp<-full_join(temp, temp2)
+
+Avgdf.summary_NEP<-subset(Avgdf.summary_NEP, !Treatment=="epinephrine")
+Avgdf.summary_NEP<-full_join(Avgdf.summary_NEP, temp)
+
+
+
+Testsheet48_2<-subset(Avgdf.summary_NEP, Time>=43 & Time<=45)
+df.summary48<- Testsheet48_2 %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+  )
+
+df.summary48<-subset(df.summary48, !Treatment=="DMSO 4%")
+#df.summary48<-subset(df.summary48, !Treatment=="DMSO 0.02%")
+df.summary48<-df.summary48%>%
+  dplyr::rename(group2="Treatment")
+
+
+pvalue_treatments<-full_join(tempz, df.summary48)
+
+pvalue_treatments$pvalue2<--log10(pvalue_treatments$p)
+
+
+
+Testsheet48_2<-subset(Avgdf.summary3, Time<=80&Time>=60)
+df.summary48<- Testsheet48_2 %>%
+  dplyr::group_by(Treatment, Category2, Run) %>%
+  dplyr::summarise(
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    mean_TEXASRED= mean(mean_TEXASRED, na.rm=TRUE)
+  )
+
+#df.summary48<-df.summary48[c(1,4)]
+#df.summary48$Treatment<-as.character(df.summary48$Treatment)
+
+#aovall<-aov(smooth_FITC ~ Treatment, data=df.summary48)
+#summary(aovall)
+#temp<-subset(df.summary48, Treatment=="epinephrine")
+#temp<-subset(temp, !Run=="R1")
+#temp<-subset(temp, !Run=="R2")
+#df.summary48<-subset(df.summary48, !Treatment=="epinephrine")
+#df.summary48<-full_join(df.summary48, temp)
+df.summary48 <- df.summary48 %>% ungroup
+
+pwc <- df.summary48 %>%
+  pairwise_t_test(
+    mean_TEXASRED ~ Treatment, paired = TRUE,
+    p.adjust.method = "none"
+    )
+
+temp<-subset(pwc, group1=="DMSO 0.02%" |group2=="DMSO 0.02%")
+
+temp2<-subset(temp, group1=="DMSO 0.02%")
+temp3<-subset(temp, group2=="DMSO 0.02%")
+
+temp3<-temp3%>%
+  dplyr::rename(group3="group1")
+temp3<-temp3%>%
+  dplyr::rename(group1="group2")
+temp3<-temp3%>%
+  dplyr::rename(group2="group3")
+temp<-full_join(temp2, temp3)
+temp<-subset(temp, !group2=="DMSO 4%")
+
+
+
+
+Testsheet48_2<-subset(Avgdf.summary3, Time<=80 &Time>=60)
+df.summary48<- Testsheet48_2 %>%
+  dplyr::group_by(Treatment, Category2) %>%
+  dplyr::summarise(
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE)
+  )
+
+df.summary48<-subset(df.summary48, !Treatment=="DMSO 4%")
+#df.summary48<-subset(df.summary48, !Treatment=="DMSO 0.02%")
+
+
+df.summary48<-df.summary48%>%
+  dplyr::rename(group2="Treatment")
+
+
+
+
+pvalue_treatmentsPI<-full_join(temp, df.summary48)
+pvalue_treatmentsPI$pvalue2<--log10(pvalue_treatmentsPI$p)
+
+
+temp<-pvalue_treatmentsPI[c(3,8,11,12)]
+temp<-temp%>%
+  dplyr::rename(pcelldeath="p")
+#temp<-temp%>%
+  #dplyr::rename(pvalue2cd="pvalue2")
+
+pvalueall<-full_join(pvalue_treatments, temp)
+```
+
+
+
+```{r}
+df.summary48<- Testsheet48_2 %>%
+  dplyr::group_by(Treatment, Category) %>%
+  dplyr::summarise(
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE)
+  )
+
+df.summary48$Category<-gsub("ER stress 2", "ER stress", df.summary48$Category)
+df.summary48$Category<-gsub("ER stress 1", "ER stress", df.summary48$Category)
+df.summary48$Category<-gsub("INS upreg 1", "INS upregulation", df.summary48$Category)
+df.summary48$Category<-gsub("INS upreg 2", "INS upregulation", df.summary48$Category)
+df.summary48$Category<-gsub("INS downreg 1", "INS downregulation", df.summary48$Category)
+df.summary48$Category<-gsub("INS downreg 2", "INS downregulation", df.summary48$Category)
+df.summary48$Category<-gsub("INS downregulation 1", "INS downregulation", df.summary48$Category)
+df.summary48$Category<-gsub("INS downregulation 2", "INS downregulation", df.summary48$Category)
+df.summary48$Category<-gsub("INS upregulation 1", "INS upregulation", df.summary48$Category)
+df.summary48$Category<-gsub("INS upregulation 2", "INS upregulation", df.summary48$Category)
+df.summary48$Category<-gsub("secretion upreg", "secretion increase", df.summary48$Category)
+df.summary48$Category<-gsub("secretion downreg", "secretion decrease", df.summary48$Category)
+unique(df.summary48$Category)
+df.summary48<- df.summary48 %>%
+  dplyr::group_by(Treatment, Category) %>%
+  dplyr::summarise(
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE)
+  )
+
+
+
+df.summary48<-subset(df.summary48, !group2=="DMSO 4%")
+df.summary48<-subset(df.summary48, !group2=="DMSO 0.02%")
+df.summary48<-subset(df.summary48, !Category=="ETOH control")
+df.summary48<-df.summary48%>%
+  dplyr::rename(group2="Treatment")
+df.summary48<-df.summary48[c(1,2)]
+pvalueall<-full_join(pvalueall, df.summary48)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+Testsheet<-pvalueall
+#Testsheet<-Testsheet%>%arrange(desc(smooth_FITC))
+P_value<-Testsheet$pvalue2
+
+Mean<-Testsheet$smooth_FITC+2.6162717
+
+p_valuecd<-Testsheet$pvalue2cd
+
+Red<-Testsheet$mean_TEXASRED
+#Testsheetavg$Drug<-factor(Testsheetavg$Drug, levels=c("DMSO", "0.1Tg","1Tg","10Tg","C","Cyto","Cyto2.5","Cyto5","Cyto10" ))
+breaksp<-c(0,1,2)
+
+breaks<-c(-12,-8,-4,0,4)
+breaksPI<-c(4000,5500,7000,8500,10000)
+mypallette<-c("grey", "yellow","blue","green")
+mypallette2<-c("grey", "yellow","blue","purple")
+p <- Testsheet%>%
+  ggplot() +
+  geom_point(aes(x = "GFP", y = reorder(group2, -smooth_FITC), size = P_value, color= Mean, alpha=0.5))+
+  scale_size_continuous(range = c(12, 45), breaks=breaksp, limits=c(0,2))+
+  #facet_grid(.~ type)+
+ # guides(size=guide_legend(order=1))+
+  labs(y="Treatment", color="GFP fluorescence", size="-log10(p-value)")+
+  scale_color_gradientn(colours=mypallette, breaks=breaks, limits=c(-10,5), oob=scales::squish)+
+  new_scale_colour()+
+  
+  geom_point(aes(x = "PI", y = reorder(group2, -mean_TEXASRED), size =p_valuecd, color= Red, alpha=0.5))+
+  scale_size_continuous(range = c(12, 40), breaks=breaksp, limits=c(0,2.5))+
+  labs(color="PI fluorescence", size="-log10(p-value)")+
+  scale_color_gradientn(colours=mypallette2, breaks=breaksPI, limits=c(3000,10000), oob=scales::squish)+
+  #scale_color_gradient2(low="grey", mid="yellow",high ="purple", breaks=breaks, labels=breaks)+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(legend.key = element_rect(size = 5),
+        legend.key.size = unit(1.5, 'lines'))+
+  theme(text=element_text(size=40,  family="Helvetica"))+
+  theme(axis.text = element_textt(family="Helvetica", color="black", size=(18)))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(legend.spacing.y = unit(3.0, 'cm')) +
+  theme(legend.key.size = unit(3, 'cm'), #change legend key size
+        legend.key.height = unit(1, 'cm'), #change legend key height
+        legend.key.width = unit(1, 'cm'), #change legend key width
+        legend.title = element_text(size=36), #change legend title font size
+        legend.text = element_text(size=24))+
+  #theme(legend.text = element_text( margin = margin(r = 30, unit = "cm")))+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+
+ggsave(filename="E:/alltreatments.pdf",width=20,height=40,units="in",dpi=600, limitsize = FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+```{r}
+
+Testsheet<-pvalueall
+#Testsheet<-Testsheet%>%arrange(desc(smooth_FITC))
+P_value<-Testsheet$pvalue2
+
+Mean<-Testsheet$smooth_FITC+2.6162717
+
+p_valuecd<-Testsheet$pvalue2cd
+
+Red<-Testsheet$mean_TEXASRED
+#Testsheetavg$Drug<-factor(Testsheetavg$Drug, levels=c("DMSO", "0.1Tg","1Tg","10Tg","C","Cyto","Cyto2.5","Cyto5","Cyto10" ))
+breaksp<-c(0,1,2)
+
+breaks<-c(-12,-8,-4,0,4)
+breaksPI<-c(4000,5500,7000,8500,10000)
+mypallette<-c("grey", "yellow","blue","green")
+mypallette2<-c("grey", "yellow","blue","purple")
+
+Testsheet$smooth_FITC2<-Testsheet$smooth_FITC+2.6162717
+#Testsheet$smooth_FITC2<-as.factor(Testsheet$smooth_FITC2)
+p <- Testsheet%>%
+  ggplot() +
+  geom_point(aes(x = mean_TEXASRED, y = reorder(group2, smooth_FITC), size = P_value, color=smooth_FITC2, alpha=0.5))+
+  scale_size_continuous(range = c(12, 45), breaks=breaksp, limits=c(0,2))+
+  #facet_grid(.~ type)+
+ # guides(size=guide_legend(order=1))+
+  scale_color_gradientn(colours=mypallette, breaks=breaks, limits=c(-12,4), oob=scales::squish,
+                       guide = guide_colorbar(frame.colour = "black", ticks.colour = "black"))+
+  labs(x= "Cell Death", y="Treatment", colour="GFP fluorescence",size="-log10(p-value)")+
+  #scale_color_gradient2(low="grey", mid="yellow",high ="purple", breaks=breaks, labels=breaks)+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(legend.key = element_rect(size = 5),
+        legend.key.size = unit(1.5, 'lines'))+
+  theme(text=element_text(size=40,  family="Helvetica"))+
+  theme(axis.text = element_text(family="Helvetica", color="black", size=(18)))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(legend.spacing.y = unit(3.0, 'cm')) +
+  theme(legend.key.size = unit(3, 'cm'), #change legend key size
+        legend.key.height = unit(1, 'cm'), #change legend key height
+        legend.key.width = unit(1, 'cm'), #change legend key width
+        legend.title = element_text(size=36), #change legend title font size
+        legend.text = element_text(size=24))+
+  #theme(legend.text = element_text( margin = margin(r = 30, unit = "cm")))+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+
+ggsave(filename="E:/alltreatments.pdf",width=20,height=40,units="in",dpi=600, limitsize = FALSE)
+
+
+
+
+
+```
+
+
+
+```{r}
+Testsheet<-pvalueall
+
+temp<-subset(pvalueall, group2=="diazoxide")
+temp$group2<-"DMSO 0.02%"
+temp$Category2<-"control"
+temp$pvalue2<-0
+temp$smooth_FITC<--2.94
+temp$mean_TEXASRED<-3916.03
+
+Testsheet<-full_join(Testsheet,temp)
+Testsheet<-subset(Testsheet, !group2=="isoxazole 9")
+
+Testsheet$Category2<-factor(Testsheet$Category2,
+                               levels=c("control","calcineurin","cAMP signalling","endonucleases","ER channels","Insulin and other signalling","nuclear receptors","nutrients","plasma membrane excitibility","protein degradation","Transcription","Translation factors"))
+#Testsheet<-subset(Testsheet, !Category=="ETOH control")
+#Testsheet<-Testsheet%>%arrange(desc(smooth_FITC))
+P_value<-Testsheet$pvalue2
+
+Mean<-Testsheet$smooth_FITC+2.94
+
+p_valuecd<-Testsheet$pvalue2cd
+
+Red<-Testsheet$mean_TEXASRED
+#Testsheetavg$Drug<-factor(Testsheetavg$Drug, levels=c("DMSO", "0.1Tg","1Tg","10Tg","C","Cyto","Cyto2.5","Cyto5","Cyto10" ))
+breaksp<-c(0,1,2,3)
+
+breaks<-c(-4,-2,0,2,4)
+breaksPI<-c(0,20,40,60,80,100)
+mypallette<-c("grey", "yellow","blue","green")
+mypallette2<-c("grey", "yellow","blue","purple")
+
+Testsheet$smooth_FITC2<-Testsheet$smooth_FITC+2.9404185
+Testsheet$mean_TEXASRED2<-Testsheet$mean_TEXASRED-2929.3
+Testsheet$mean_TEXASRED2<-Testsheet$mean_TEXASRED2*99/7000
+#Testsheet$smooth_FITC2<-as.factor(Testsheet$smooth_FITC2)
+p <- Testsheet%>%
+  ggplot(aes(x = mean_TEXASRED2, y = smooth_FITC2)) +
+  geom_point(aes( size = P_value, color=Category2, alpha=0.5))+
+  geom_point(size=2)+
+  #geom_text_repel(aes(label=group2), color="black",size=10, force=5,
+                  #segment.linetype=1,
+                  #segment.angle=45,
+                  #segment.color="black",
+                  #box.padding=1)+
+  scale_size_continuous(range = c(12, 45), breaks=breaksp, limits=c(0,3))+
+  #facet_grid(.~ type)+
+ # guides(size=guide_legend(order=1))+
+  guides(colour = guide_legend(override.aes = list(size=10)))+
+  scale_x_continuous(breaks=breaksPI, limit=c(0,100), oob=scales::squish)+
+  scale_y_continuous(breaks=breaks, limit=c(-4,5), oob=scales::squish)+
+  labs(x= "\nCell Death", y="\nGFP fluorescence", colour="Treatment category",size="-log10(p-value)")+
+  #scale_color_gradient2(low="grey", mid="yellow",high ="purple", breaks=breaks, labels=breaks)+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 2))+
+  theme(axis.ticks.length=unit(0.75, "cm"))+
+  theme(legend.key = element_rect(size = 5),
+        legend.key.size = unit(1.5, 'lines'))+
+  theme(text=element_text(size=60,  family="Helvetica"))+
+  theme(axis.text.x = element_text(vjust = -0.75))+
+  theme(axis.text.y = element_text(hjust = -0.25))+
+  theme(axis.text = element_text(family="Helvetica", color="black", size=(40)))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(legend.spacing.y = unit(3.0, 'cm')) +
+  theme(legend.key.size = unit(3, 'cm'), #change legend key size
+        legend.key.height = unit(2, 'cm'), #change legend key height
+        legend.key.width = unit(2, 'cm'), #change legend key width
+        legend.title = element_text(size=40), #change legend title font size
+        legend.text = element_text(size=30))+
+  #theme(legend.text = element_text( margin = margin(r = 30, unit = "cm")))+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+
+ggsave(filename="E:/alltreatments3.pdf",width=35,height=30,units="in",dpi=600, limitsize = FALSE)
+
+temp<-Testsheet[c(3,16,17)]
+write_xlsx(temp,"E:\\GFPcelldeath.xlsx")
+
+```
+
+
+
+
+
+```{r}
+
+
+Transitionsfemale$Run<-"R5"
+Transitionsmale$Run<-"R6"
+
+Transitionsavg<-full_join(TransitionsM1_all, TransitionsF1_all)
+Transitionsavg<-full_join(Transitionsavg, Transitionsfemale)
+Transitionsavg<-full_join(Transitionsavg, Transitionsmale)
+Transitionsavg$ratio<-Transitionsavg$lowtohigh_percent_pop/Transitionsavg$hightolow_percent_pop
+Transitionsavg$Treatment<-gsub("DHDBC", "DHBDC",Transitionsavg$Treatment)
+Transitionsavg$Treatment<-gsub("pramlintide", "pramlinitide",Transitionsavg$Treatment)
+Transitionsavg$Treatment<-gsub("DMSO 2%", "DMSO 0.02%", Transitionsavg$Treatment)
+Transitionstest<-Transitionsavg
+Transitionstest[is.na(Transitionstest)] <- 0
+
+Transitionstest <- Transitionstest %>% ungroup
+
+pwc <- Transitionstest %>%
+  pairwise_t_test(
+    ratio ~ Treatment, paired = TRUE,
+    p.adjust.method = "none"
+    )
+
+
+temp<-subset(pwc, group1=="DMSO 0.02%" |group2=="DMSO 0.02%")
+
+temp2<-subset(temp, group1=="DMSO 0.02%")
+temp3<-subset(temp, group2=="DMSO 0.02%")
+
+temp3<-temp3%>%
+  dplyr::rename(group3="group1")
+temp3<-temp3%>%
+  dplyr::rename(group1="group2")
+temp3<-temp3%>%
+  dplyr::rename(group2="group3")
+temp<-full_join(temp2, temp3)
+temp<-subset(temp, !group2=="DMSO 4%")
+temp<-temp[c(3,8)]
+
+
+temp4 <- data.frame("DMSO 0.02%", "1")
+temp4<-temp4%>%
+  dplyr::rename(group2="X.DMSO.0.02..")
+temp4<-temp4%>%
+  dplyr::rename(p="X.1.")
+temp4$p<-as.numeric(temp4$p)
+temp<-full_join(temp, temp4)
+temp<-temp%>%
+  dplyr::rename(Treatment="group2")
+
+temp2<- Transitionstest %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    ratio = mean(ratio, na.rm=TRUE)
+  )
+temp2<-subset(temp2, !Treatment=="DMSO 4%")
+
+transitionpvalue<-full_join(temp, temp2)  
+
+temp<-Transitionsavg%>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    lowtohigh=mean(lowtohigh_percent_pop, na.rm=TRUE),
+    hightolow=mean(hightolow_percent_pop, na.rm=TRUE)
+  )
+temp<-subset(temp, !Treatment=="DMSO 4%")  
+transitionpvalue<-full_join(transitionpvalue,temp)
+```
+
+```{r}
+Testsheet<-subset(Avgdf.summary, Time<=45&Time>=43)
+Testsheet<-subset(Testsheet, !Treatment=="DMSO 4%")
+GFPavg2<- Testsheet %>%
+  dplyr::group_by(Treatment) %>%
+  dplyr::summarise(
+    #sd = std.error(smooth_FITC, na.rm = TRUE),
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    #mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+```
+
+```{r}
+Testsheet<-transitionpvalue
+Testsheet$ratio2<-log10(Testsheet$ratio)
+Testsheet<-full_join(Testsheet, GFPavg2)
+Testsheet$Mean<-Testsheet$smooth_FITC+2.9404185
+mypallette<-c("grey", "yellow","blue","green")
+Testsheet<-subset(Testsheet, !Treatment=="eeyarestatin I")
+Testsheet<-subset(Testsheet, !Treatment=="actinomycin D")
+Testsheet<-subset(Testsheet, !Treatment=="sunitinib")
+Mean<-Testsheet$ratio2
+Testsheet$p2<--log10(Testsheet$p)
+
+#breaks<-c(0, 0.3, 0.6,0.9,1.2,1.5)
+#breaks<-c(0,0.5,1,1.5,2)
+breaks<-c(-2,-1,0,1,2,3)
+P<-ggplot(Testsheet, aes(x = reorder(Treatment, ratio2), y = ratio2)) +
+  geom_col(aes(fill=Mean))+
+  coord_flip()+
+  #facet_grid(.~ type)+
+ # guides(size=guide_legend(order=1))+
+  scale_fill_gradientn(colours=mypallette, breaks=breaks, limits=c(-2, 3), oob=scales::squish,
+                       guide = guide_colorbar(frame.colour = "black", ticks.colour = "black"))+
+  #labs(x= "Treatment", y="\nTransition ratio\nlog10(Low to High/High to Low)", fill="-log10(p-value)")+
+  labs(x= "Treatment", y="\nTransition ratio\nlog10(Low to High/High to Low)", fill="GFP fluorescence")+
+  #scale_color_gradient2(low="grey", mid="yellow",high ="purple", breaks=breaks, labels=breaks)+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.text.x = element_text(vjust = -0.75))+
+  #theme(axis.text.y = element_text(hjust = 0))+
+  #theme(legend.key = element_rect(size = 5),
+        #legend.key.size = unit(1.5, 'lines'))+
+  theme(text=element_text(size=50,  family="Helvetica"))+
+  theme(axis.text = element_text(family="Helvetica", color="black", size=(35)))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(axis.ticks.length=unit(0.75, "cm"))+
+  #theme(legend.spacing.y = unit(3.0, 'cm')) +
+  theme(legend.key.size = unit(3, 'cm'), #change legend key size
+        legend.key.height = unit(3, 'cm'), #change legend key height
+        legend.key.width = unit(3, 'cm'), #change legend key width
+        legend.title = element_text(size=36), #change legend title font size
+        legend.text = element_text(size=24))+
+  #theme(legend.text = element_text( margin = margin(r = 30, unit = "cm")))+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+  theme(plot.margin = margin(t = 1.5, r = 1.5, b = 1.5, l = 1.5, unit = "cm"))
+
+
+ggsave(filename="E:/alltreatments4.pdf",width=20,height=40,units="in",dpi=600, limitsize = FALSE)
+
+
+
+```
+
+
+
+
+
+
+```{r}
+
+Testsheet<-transitionpvalue
+Testsheet$ratio2<-log10(Testsheet$ratio)
+Testsheet<-full_join(Testsheet, GFPavg2)
+
+
+temp<-subset(Testsheet, Treatment=="epinephrine")
+temp$hightolow<-6.2
+temp$smooth_FITC<--2
+Testsheet<-subset(Testsheet, !Treatment=="epinephrine")
+Testsheet<-full_join(Testsheet, temp)
+
+
+Testsheet$Mean<-Testsheet$smooth_FITC+2.9404185
+mypallette<-c("grey", "yellow","blue","green")
+Testsheet<-subset(Testsheet, !Treatment=="eeyarestatin I")
+Testsheet<-subset(Testsheet, !Treatment=="actinomycin D")
+Testsheet<-subset(Testsheet, !Treatment=="sunitinib")
+Mean<-Testsheet$ratio2
+Testsheet$p2<--log10(Testsheet$p)
+
+
+
+#Testsheet$p2<--log10(Testsheet$p)
+#Testsheetavg$Drug<-factor(Testsheetavg$Drug, levels=c("DMSO", "0.1Tg","1Tg","10Tg","C","Cyto","Cyto2.5","Cyto5","Cyto10" ))
+breaksp<-c(0,1,2,3,4)
+breaksratio<-c(-3, -2, -1, 0,1,2,3)
+breaksratio2<-c(0, 0.4, 0.8, 1.2,1.6,2)
+breaks<-c(0, 3, 6, 9, 12)
+breaksPI<-c(0,5,10,15,20)
+
+
+mypallette<-c( "orange","grey","green")
+mypallette2<-c( "orange","grey","green")
+
+
+#Testsheet$smooth_FITC2<-as.factor(Testsheet$smooth_FITC2)
+p <- Testsheet%>%
+  ggplot(aes(x = hightolow, y = lowtohigh)) +
+  geom_point(aes( size = p2, color=Mean, alpha=0.5))+
+  geom_point(size=2)+
+  #geom_text_repel(aes(label=Treatment), color="black",size=10, force=10,
+                  #segment.linetype=1,
+                  #segment.angle=45,
+                  #segment.color="black",
+                  #nudge_x = 2,
+                  #box.padding=1)+
+  scale_size_continuous(range = c(12, 45), breaks=breaksp, limits=c(0,4))+
+  #facet_grid(.~ type)+
+ # guides(size=guide_legend(order=1))+
+  scale_color_gradientn(colours=mypallette, breaks=breaksratio, limits=c(-3,3), oob=scales::squish,
+                       guide = guide_colorbar(frame.colour = "black", ticks.colour = "black"))+
+  #guides(colour = guide_legend(override.aes = list(size=10)))+
+
+  scale_x_continuous(breaks=breaksPI, limit=c(0,20), oob=scales::squish)+
+  scale_y_continuous(breaks=breaks, limit=c(0,15), oob=scales::squish)+
+  labs(x= "\n% High to Low transitions", y="\n% Low to High transitions\n", colour="GFP fluorescence",size="-log10(p-value)")+
+  #scale_color_gradient2(low="grey", mid="yellow",high ="purple", breaks=breaks, labels=breaks)+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 2))+
+  theme(axis.ticks.length=unit(0.75, "cm"))+
+  theme(legend.key = element_rect(size = 5),
+        legend.key.size = unit(1.5, 'lines'))+
+  theme(text=element_text(size=60,  family="Helvetica"))+
+  theme(axis.text.x = element_text(vjust = -0.75))+
+  theme(axis.text.y = element_text(hjust = -0.25))+
+  theme(axis.text = element_text(family="Helvetica", color="black", size=(40)))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(legend.spacing.y = unit(3.0, 'cm')) +
+  theme(legend.key.size = unit(3, 'cm'), #change legend key size
+        legend.key.height = unit(2, 'cm'), #change legend key height
+        legend.key.width = unit(2, 'cm'), #change legend key width
+        legend.title = element_text(size=40), #change legend title font size
+        legend.text = element_text(size=30))+
+  #theme(legend.text = element_text( margin = margin(r = 30, unit = "cm")))+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+
+ggsave(filename="E:/alltreatments_dot2.pdf",width=35,height=30,units="in",dpi=600, limitsize = FALSE)
+
+temp<-Testsheet[c(1,4,5)]
+write_xlsx(temp,"E:\\GFPcelltransition2.xlsx")
+```
+
+
+
+```{r}
+finaldf.summary<- Avgdf.summary %>%
+  dplyr::group_by(Time, Treatment, Category) %>%
+  dplyr::summarise(
+    sd = std.error(smooth_FITC, na.rm = TRUE),
+    smooth_FITC = mean(smooth_FITC, na.rm = TRUE),
+    mean_TEXASRED = mean(mean_TEXASRED, na.rm=TRUE),
+  )
+
+
+
+```
+
+
+
+
+
+```{r}
+Testsheetavg<-subset(finaldf.summary, Treatment=="DMSO 0.02%"|Treatment=="GLP-1"|Treatment=="IBMX" |Treatment=="arginine"|Treatment=="staurosporine"|Treatment=="sodium butyrate")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#temp<-subset(Testsheetavg, smooth_FITC<=-10)
+#temp$smooth_FITC<--10
+#temp2<-subset(Testsheetavg, smooth_FITC>=-10)
+#Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","GLP-1","IBMX","arginine","staurosporine","sodium butyrate"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_color_manual(values=c("#000000","#E69F00","#56B4E9","#009E73",
+                "#F0E442","#0072B2","#D55E00","#CC79A7"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=18,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(14)))+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  scale_fill_manual(values=c("#000000","#E69F00","#56B4E9","#009E73",
+                "#F0E442","#0072B2","#D55E00","#CC79A7"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+
+```
+
+
+```{r}
+Testsheetavg<-subset(finaldf.summary, Treatment=="DMSO 0.02%"|Treatment=="triptolide"|Treatment=="APY29" |Treatment=="cyclohexamide"|Treatment=="alpha amanitin"|Treatment=="DRB"|Treatment=="LY294002"|Treatment=="MGCD0103")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","triptolide","APY29","cyclohexamide","alpha amanitin","DRB","LY294002","MGCD0103"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_color_manual(values=c("#000000","#E69F00","#56B4E9","#009E73",
+                "#F0E442","#0072B2","#D55E00","#CC79A7","#E20134"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=18,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(14)))+
+    scale_fill_manual(values=c("#000000","#E69F00","#56B4E9","#009E73",
+                "#F0E442","#0072B2","#D55E00","#CC79A7","#E20134"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))
+```
+```{r}
+#Testsheetavg<-subset(finaldf.summary, Treatment=="DMSO 0.02%"|Treatment=="triptolide"|Treatment=="APY29" |Treatment=="cyclohexamide"|Treatment=="alpha amanitin"|Treatment=="DRB"|Treatment=="LY294002"|Treatment=="MGCD0103")
+Testsheetavg<-subset(finaldf.summary,Category2=="calcineurin"|Category2=="control")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","tacrolimus","cyclosporin A","okadaic acid"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_color_manual(values=c("#000000","#f8c997","#f6b26b","#c48e55",
+                "#F0E442","#0072B2","#D55E00","#CC79A7","#E20134"))+
+  scale_linetype_manual(values=c("dotted", "longdash","longdash", "longdash",
+                                "solid", "solid","solid", "solid","solid" ))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+  scale_fill_manual(values=c("#000000","#f8c997","#f6b26b","#c48e55",
+                "#F0E442","#0072B2","#D55E00","#CC79A7","#E20134"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+
+
+
+```{r}
+#Testsheetavg<-subset(finaldf.summary, Treatment=="DMSO 0.02%"|Treatment=="triptolide"|Treatment=="APY29" |Treatment=="cyclohexamide"|Treatment=="alpha amanitin"|Treatment=="DRB"|Treatment=="LY294002"|Treatment=="MGCD0103")
+Testsheetavg<-subset(finaldf.summaryNEP, Category2=="cAMP signalling"|Category2=="control")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","GLP-1","IBMX","epinephrine","SST","pramlinitide"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "solid","solid", "solid",
+                                "dashed", "solid","solid", "solid","solid" ))+
+  scale_color_manual(values=c("#000000","#B29f66","#a58f4c","#987f32",
+                "#7f6000","#725600","#654c00","#584300","#4c3900"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#B29f66","#a58f4c","#987f32",
+                "#7f6000","#725600","#654c00","#584300","#4c3900"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+
+
+
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="endonucleases"|Category2=="control")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","APY29","sunitinib"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "dashed","dashed", "solid",
+                                "solid", "solid","solid", "solid","solid" ))+
+  scale_color_manual(values=c("#000000","#93c47d","#759c64","#674ea7",
+                "#523e85","#725600","#654c00","#584300","#4c3900"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#93c47d","#759c64","#674ea7",
+                "#523e85","#725600","#654c00","#584300","#4c3900"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+
+
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="ER channels"|Category2=="control")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","thapsigargin","ryanodine","xestospongin"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "dashed","dashed", "dashed",
+                                "solid", "solid","solid", "solid","solid" ))+
+  scale_color_manual(values=c("#000000","#90f07a","#75ed5a","#5dbd48",
+                "#569c77","#4c8b6a","#39684f","#584300","#4c3900"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#90f07a","#75ed5a","#5dbd48",
+                "#569c77","#4c8b6a","#39684f","#584300","#4c3900"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+
+
+
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="Insulin and other signalling"|Category2=="control")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","HNMPA","S961","AS1842856",
+                                        "LY294002","wortmannin",
+                                        "AICAR","metformin","staurosporine"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "dashed","dashed", "dashed",
+                                "dashed", "dashed","solid", "solid","dashed" ))+
+  scale_color_manual(values=c("#000000","#a1f5d0","#72f0b9","#63efb2",
+                "#59d7a0","#4fbf8e","#45a77c","#3b8f6a","#317759","#4c3900"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#a1f5d0","#72f0b9","#63efb2",
+                "#59d7a0","#4fbf8e","#45a77c","#3b8f6a","#317759","#4c3900"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="nuclear receptors"|Category2=="control")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","dexamethasone","rosiglitazone"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "solid","solid", "solid",
+                                "solid", "solid","solid", "solid","solid" ))+
+  scale_color_manual(values=c("#000000","#63efe3","#4fbfb5","#80a753",
+                "#59743a","#4c8b6a","#39684f","#584300","#4c3900"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#63efe3","#4fbfb5","#80a753",
+                "#59743a","#4c8b6a","#39684f","#584300","#4c3900"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="nutrients"|Category2=="control")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","palmitic acid","arginine","sodium butyrate"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "solid","solid", "solid",
+                                "solid", "solid","solid", "solid","solid" ))+
+  scale_color_manual(values=c("#000000","#8bcfe3","#6fc4dc","#589cb0",
+                "#59743a","#4c8b6a","#39684f","#584300","#4c3900"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#8bcfe3","#6fc4dc","#589cb0",
+                "#59743a","#4c8b6a","#39684f","#584300","#4c3900"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="plasma membrane excitibility"|Category2=="control")
+#Testsheetavg<-subset(Testsheetavg, Treatment=="MG132"|Treatment=="DMSO 0.02%")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, Treatment=="tolbutamide"|Treatment=="DMSO 0.02%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","diazoxide","verapamil","tolbutamide"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "solid","dashed", "dashed",
+                                "solid", "solid","solid", "solid","solid","solid",
+                                "solid","solid","solid" ))+
+  scale_color_manual(values=c("#000000","#7dafdb","#5d9bd2","#538bbd","#41ab5c",
+                "#29a148","#129734","#10872e","#0e7829","#0c6924","#0a5a1f","#094b1a"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#7dafdb","#5d9bd2","#538bbd","#41ab5c",
+                "#29a148","#129734","#10872e","#0e7829","#0c6924","#0a5a1f","#094b1a"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="protein degradation"|Category2=="control")
+Testsheetavg<-subset(Testsheetavg, Treatment=="tunicamycin"|Treatment=="DMSO 0.02%")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","bortezomib","MG132","tunicamycin","eeyarestatin I"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "dashed","dashed", "dashed",
+                                "dashed", "solid","solid", "solid","solid","solid",
+                                "solid","solid","solid" ))+
+  scale_color_manual(values=c("#000000","#ada1cf","#998ac4","#897cb0","#6b6089",
+                "#29a148","#129734","#10872e","#0e7829","#0c6924","#0a5a1f","#094b1a"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#ada1cf","#998ac4","#897cb0","#6b6089",
+                "#29a148","#129734","#10872e","#0e7829","#0c6924","#0a5a1f","#094b1a"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="Transcription"|Category2=="control")
+#Testsheetavg<-subset(Testsheetavg, Treatment=="epinephrine"|Treatment=="DMSO 0.02%")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","DRB","actinomycin D","alpha amanitin","trichostatin A","MGCD0103","triptolide"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "dashed","dashed", "dashed",
+                                "solid", "solid","dashed", "solid","solid","solid",
+                                "solid","solid","solid" ))+
+  scale_color_manual(values=c("#000000","#dface7","#d898e2","#c288cb","#ac79b4",
+                "#976a9e","#815b87","#10872e","#0e7829","#0c6924","#0a5a1f","#094b1a"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#dface7","#d898e2","#c288cb","#ac79b4",
+                "#976a9e","#815b87","#10872e","#0e7829","#0c6924","#0a5a1f","#094b1a"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+```{r}
+Testsheetavg<-subset(finaldf.summary,Category2=="Translation factors"|Category2=="control")
+Testsheetavg<-subset(Testsheetavg, Treatment=="PKR inhibitor"|Treatment=="DMSO 0.02%")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                               levels=c("DMSO 0.02%","cyclohexamide","PKR inhibitor","isrib","azoramide","PERK inhibitor I","DHBDC","CCT020312","sal003"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment, linetype=Treatment))+
+  geom_line(aes(color=Treatment), size=1.5)+
+  ylim(-15,10)+
+  scale_linetype_manual(values=c("dotted", "dashed","solid", "solid",
+                                "solid", "solid","dashed", "dashed","dashed","solid",
+                                "solid","solid","solid" ))+
+  scale_color_manual(values=c("#000000","#fa98d4","#f87ac8","#f86cc2","#df61ae",
+                "#c6569b","#ad4b87","#944074","#7c3661","#0c6924","#0a5a1f","#094b1a"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#fa98d4","#f87ac8","#f86cc2","#df61ae",
+                "#c6569b","#ad4b87","#944074","#7c3661","#0c6924","#0a5a1f","#094b1a"))+
+  geom_ribbon(aes(fill=Treatment,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  #theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+```{r}
+Testsheetavg<-subset(finaldf.summarySex, Treatment=="sunitinib"|Treatment=="DMSO 0.02%")
+#Testsheetavg<-subset(Testsheetavg, Treatment=="epinephrine"|Treatment=="DMSO 0.02%")
+unique(Testsheetavg$Treatment)
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+Testsheetavg<-subset(Testsheetavg, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+#Testsheetavg<-subset(Testsheetavg, Time==0|Time==12|Time==24|
+                       #Time==36|Time==48|Time==60|
+                       #Time==72|Time==84|Time==96)
+Testsheetavg$sample<-paste0(Testsheetavg$Treatment,Testsheetavg$Sex)
+temp<-subset(Testsheetavg, smooth_FITC<=-15)
+temp$smooth_FITC<--15
+temp2<-subset(Testsheetavg, smooth_FITC>=-15)
+Testsheetavg<-full_join(temp, temp2)
+#Testsheetavg<-subset(Testsheetavg, !Sex=="Female")
+unique(Testsheetavg$Treatment)
+#Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                              # levels=c("DMSO 0.02%","cyclohexamide","PKR inhibitor","isrib","azoramide","PERK inhibitor I","DHBDC","CCT020312","sal003"))
+
+
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 2%")
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=sample))+
+  geom_line(aes(color=sample), size=1.5)+
+  ylim(-15,10)+
+  #scale_linetype_manual(values=c("dotted", "dashed","solid", "solid",
+                                #"solid", "solid","dashed", "dashed","dashed","solid",
+                                #"solid","solid","solid" ))+
+  scale_color_manual(values=c("#000000","#3333FF","#990033","#f86cc2","#df61ae",
+                "#c6569b","#ad4b87","#944074","#7c3661","#0c6924","#0a5a1f","#094b1a"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=40,  family="TT Arial"))+
+  theme(axis.text = element_text(family="TT Arial", color="black", size=(32)))+
+    scale_fill_manual(values=c("#000000","#3333FF","#990033","#f86cc2","#df61ae",
+                "#c6569b","#ad4b87","#944074","#7c3661","#0c6924","#0a5a1f","#094b1a"))+
+  geom_ribbon(aes(fill=sample,ymin =smooth_FITC-sd, ymax = smooth_FITC+sd),
+              alpha=0.1, colour=NA)+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  theme(legend.position="none")+
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1))+
+  theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+    theme(axis.ticks = element_line(colour = "black", size = 1))+
+  theme(axis.ticks.length = unit(0.5, "cm"))
+```
+
+
+
+
+
+
+
+
+
+```{r}
+##For 96 hours
+Testsheetavg<-subset(finaldf.summary, Time==0|Time==6|Time==12|Time==18|Time==24|
+                       Time==30|Time==36|Time==42|Time==48|Time==54|Time==60|Time==66|
+                       Time==72|Time==78|Time==84|Time==90|Time==96)
+Testsheetavg<-subset(Testsheetavg, !Category=="ETOH control")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+Testsheetavg<-subset(Testsheetavg, !Treatment=="ETOH")
+#Testsheetavg<-subset(df_mergedAVG, !Sex=="Female")
+#Testsheetavg<-subset(Testsheetavg, !Treatment=="DMSO 4%")
+#Testsheetavg<-subset(Testsheetavg, Time<=45)
+temp1<-subset(Testsheetavg, smooth_FITC<=-15)
+Testsheetavg<-subset(Testsheetavg, !smooth_FITC<=-15)
+temp1$smooth_FITC<--15
+Testsheetavg<-full_join(Testsheetavg, temp1)
+
+#Testsheetavg$Treatment<-factor(Testsheetavg$Treatment,
+                                 #levels=c("actinomycin D","alpha amanitin","DRB","triptolide",
+                                          #"DMSO 2%", "DMSO 4%"))
+p<-Testsheetavg%>%
+  ggplot(aes(x=Time, y=smooth_FITC, group=Treatment))+
+  geom_line(aes(color=Category), size=1.5)+
+  geom_line(data=subset(Testsheetavg,Treatment=="DMSO 0.02%"), aes(x=Time, y=smooth_FITC), colour="black", size=2)+
+  coord_cartesian(clip = "off") +
+  #geom_text_repel(data=subset(Testsheetavg, Time==96),aes(label = Treatment, color=Category),direction="y",force=1, force_pull=0,hjust=0, max.overlaps=100,
+                  #nudge_x = 35, nudge_y=5, ylim=c(5, -15),xlim=c(0,150),segment.color="black",  size=7,
+                  #na.rm = TRUE)+
+  ylim(-15, 5)+
+  #scale_color_manual(values=c("#CC0033","#990033","#660000","#FF00CC", "#000000", "#666666"))+
+  xlab("\nTime (hours)")+
+  ylab("Relative fluorescence intensity\n")+
+  theme(text=element_text(size=60,  family="Helvetica"))+
+  theme(axis.text = element_text(family="Helvetica", color="black", size=(50)))+
+  #theme(axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))+
+  #theme(axis.title.x = element_text(margin = margin(t = 0, r = 0, b = 20, l = 0)))+
+  theme(legend.position="none")+
+  #theme(legend.key.size = unit(0.1, 'cm'), #change legend key size
+        #legend.key.height = unit(0.1, 'cm'), #change legend key height
+        #legend.key.width = unit(0.1, 'cm'), #change legend key width
+        #legend.title = element_text(size=0.1), #change legend title font size
+        #legend.text = element_text(size=0.1))+ #change legend text font size
+  scale_x_continuous(breaks=c(0,24,48,72,96))+
+  theme(axis.line = element_line(colour = 'black', size = 1.5))+
+  theme(axis.ticks = element_line(colour = "black", size = 1.5))+
+  theme(axis.ticks.length=unit(1, "cm"))+
+  #axis.text.x = element_text(margin = margin(t=3, unit="cm"))+
+  #axis.text.y = element_text(margin = margin(t=3, unit="cm"))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  theme(panel.background = element_blank(),axis.line=element_line(color="black"))+
+  theme(plot.margin = margin(1,5,1,1, "in"))
+
+ggsave(filename="E:/lifetimeall3.pdf",width=40,height=25,units="in",dpi=600, limitsize = FALSE)
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
